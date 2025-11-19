@@ -1,0 +1,24 @@
+ID,Name,Description,Group
+pred_agreement,Predicative agreement,Does the language allow predicative agreement?,agreement
+agr_subj,Agreement with subject,Predicate agrees with subject?,agreement
+agr_do,Agreement with direct object,Predicate agrees with direct object?,agreement
+agr_io,Agreement with indirect object,Predicate agrees with indirect object?,agreement
+agr_allocutive,Allocutive agreement,Allocutive agreement on the verb?,agreement
+agr_topic,Agreement with topic,Agreement with topics distinct from subjects?,agreement
+agr_adjunct,Agreement with adjunct,Agreement with adjuncts?,agreement
+agr_nom_abs,Agreement with NOM/ABS,Agreement with nominative/absolutive?,agreement
+agr_acc,Agreement with ACC,Agreement with accusative?,agreement
+agr_oblique,Agreement with oblique,Agreement with oblique arguments?,agreement
+agr_defective_obl,Defective intervention of oblique?,Oblique triggers defective intervention?,agreement
+agr_finite,Agreement on finite verb,Agreement morphology on finite verbs?,agreement
+agr_nonfinite,Agreement on non-finite verb,Agreement morphology on non-finite verbs?,agreement
+branching,Branching,Basic syntactic branching type,language-metadata
+word_order_basic,Basic word order,Basic clausal word order,language-metadata
+word_order_nadj,NAdj word order,Relative order of noun and adjective,language-metadata
+polysynthesis,Polysynthesis,Polysynthetic?,language-metadata
+alignment,Alignment,Alignment type,language-metadata
+case_marking,Case marking,Presence of case marking,language-metadata
+scrambling,Scrambling?,Availability of scrambling,language-metadata
+wh_in_situ,Wh in situ,Wh in situ as dominant question strategy?,language-metadata
+pro_drop,Pro drop,Pro drop,language-metadata
+inflectional_synthesis_of_the_verb,Inflectional synthesis of the verb,Inflectional synthesis of the verb,language-metadata
