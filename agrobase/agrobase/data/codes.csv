@@ -9,6 +9,8 @@ agr_io.yes,agr_io,yes
 agr_io.no,agr_io,no
 agr_allocutive.yes,agr_allocutive,yes
 agr_allocutive.no,agr_allocutive,no
+agr_focus.no,agr_focus,no
+agr_focus.yes,agr_focus,yes
 agr_topic.yes,agr_topic,yes
 agr_topic.no,agr_topic,no
 agr_adjunct.yes,agr_adjunct,yes
@@ -25,9 +27,9 @@ agr_finite.yes,agr_finite,yes
 agr_finite.no,agr_finite,no
 agr_nonfinite.yes,agr_nonfinite,yes
 agr_nonfinite.no,agr_nonfinite,no
-branching.left,branching,left-headed
-branching.right,branching,right-headed
-word_order_basic.no_dominant,word_order_basic,no dominant
+branching.left-headed,branching,left-headed
+branching.right-headed,branching,right-headed
+word_order_basic.no dominant,word_order_basic,no dominant
 word_order_basic.SOV,word_order_basic,SOV
 word_order_basic.SVO,word_order_basic,SVO
 word_order_basic.VSO,word_order_basic,VSO
@@ -36,11 +38,12 @@ word_order_basic.OVS,word_order_basic,OVS
 word_order_basic.OSV,word_order_basic,OSV
 word_order_nadj.NAdj,word_order_nadj,NAdj
 word_order_nadj.AdjN,word_order_nadj,AdjN
-word_order_nadj.no_dominant,word_order_nadj,no dominant 
+word_order_nadj.no dominant,word_order_nadj,no dominant
 polysynthesis.yes,polysynthesis,yes
 polysynthesis.no,polysynthesis,no
 alignment.nominative,alignment,nominative
 alignment.ergative,alignment,ergative
+alignment.neutral,alignment,neutral
 case_marking.yes,case_marking,yes
 case_marking.no,case_marking,no
 scrambling.yes,scrambling,yes
@@ -51,3 +54,5 @@ pro_drop.yes,pro_drop,yes
 pro_drop.no,pro_drop,no
 inflectional_synthesis_of_the_verb.yes,inflectional_synthesis_of_the_verb,yes
 inflectional_synthesis_of_the_verb.no,inflectional_synthesis_of_the_verb,no
+agr_compl.yes,agr_compl,yes
+agr_compl.no,agr_compl,no

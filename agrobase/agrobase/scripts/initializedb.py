@@ -66,6 +66,9 @@ def load_parameters_and_codes(data: Data):
             group = row.get("Group") or ""
             if group:
                 p.jsondata["group"] = group
+            parent = row.get("Parent") or ""
+            if parent:
+                p.jsondata["parent"] = parent
 
     # 2. Коды (DomainElement)
     cpath = DATA_DIR / "codes.csv"
@@ -73,17 +76,25 @@ def load_parameters_and_codes(data: Data):
         for row in csv.DictReader(fp):
             param = data["Parameter"][row["Parameter_ID"]]
 
-            # безопасный ID без точек
-            raw_id = row["ID"]                  # например "agr_subj.yes"
-            safe_id = raw_id.replace(".", "_")  # "agr_subj_yes"
+            raw_id = row["ID"]                  # напр. "alignment.neutral"
+            safe_id = raw_id.replace(".", "_")  # "alignment_neutral"
+
+            # Игнорируем, что лежит в Name, и стандартизируем:
+            # берём всё после первой точки, если она есть.
+            if "." in raw_id:
+                label = raw_id.split(".", 1)[1].strip()
+            else:
+                # fallback: либо Name, либо сам raw_id
+                label = (row.get("Name") or raw_id).strip()
 
             data.add(
                 common.DomainElement,
-                safe_id,        # ключ для Data и id объекта
+                safe_id,
                 id=safe_id,
-                name=row["Name"],
+                name=label,
                 parameter=param,
             )
+
 
 
 def load_values(data: Data, contribution: common.Contribution):
@@ -132,6 +143,24 @@ def load_values(data: Data, contribution: common.Contribution):
 
             data.add(common.Value, value_id, **kwargs)
 
+            raw_src = (row.get("Source_ID") or "").replace(";", ",")
+            source_ids = [
+                s.strip() for s in raw_src.split(",") if s.strip()
+            ]
+            for sid in source_ids:
+                try:
+                    src = data["Source"][sid]
+                except KeyError:
+                    # если в CSV опечатка в ключе, просто пропускаем
+                    continue
+                # создаём ссылку ValueSet ↔ Source
+                DBSession.add(
+                    common.ValueSetReference(
+                        source=src,
+                        valueset=vs,
+                    )
+                )
+
 
 def load_examples(data: Data):
     """
@@ -165,7 +194,7 @@ def load_examples(data: Data):
             # линкуем пример к параметрам через нашу таблицу SentenceParameter
             param_ids = [
                 p.strip()
-                for p in row.get("Parameter_IDs", "").split(";")
+                for p in row.get("Parameter_IDs", "").split(",")
                 if p.strip()
             ]
             for pid in param_ids:
@@ -174,7 +203,21 @@ def load_examples(data: Data):
                 except KeyError:
                     continue
                 DBSession.add(models.SentenceParameter(sentence=sent, parameter=param))
-
+            raw_src = (row.get("Source_ID") or "").replace(";", ",")
+            source_ids = [
+                s.strip() for s in raw_src.split(",") if s.strip()
+            ]
+            for sid in source_ids:
+                try:
+                    src = data["Source"][sid]
+                except KeyError:
+                    continue
+                DBSession.add(
+                    common.SentenceReference(
+                        source=src,
+                        sentence=sent,
+                    )
+                )
 
 def main(args):
     """
