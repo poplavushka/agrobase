@@ -12,7 +12,7 @@ rus,agr_oblique,agr_oblique.no,,corbett2010agreement
 rus,agr_defective_obl,agr_defective_obl.no,,corbett2010agreement
 rus,agr_finite,agr_finite.yes,,corbett2010agreement
 rus,agr_nonfinite,agr_nonfinite.no,,corbett2010agreement
-rus,branching,branching.right,,578392
+rus,branching,branching.right-headed,,578392
 rus,word_order_basic,word_order_basic.SVO,,578392
 rus,word_order_nadj,word_order_nadj.AdjN,,578392
 rus,polysynthesis,polysynthesis.no,,578392
@@ -35,7 +35,7 @@ sanz,agr_oblique,agr_oblique.yes,,571422
 sanz,agr_defective_obl,agr_defective_obl.no,,571422
 sanz,agr_finite,agr_finite.yes,,571422
 sanz,agr_nonfinite,agr_nonfinite.yes,,571422
-sanz,branching,branching.left,,571422
+sanz,branching,branching.left-headed,,571422
 sanz,word_order_basic,word_order_basic.SOV,,571422
 sanz,word_order_nadj,word_order_nadj.AdjN,,571422
 sanz,polysynthesis,polysynthesis.no,,571422
@@ -45,3 +45,21 @@ sanz,scrambling,scrambling.yes,,571422
 sanz,wh_in_situ,wh_in_situ.no,,571422
 sanz,pro_drop,pro_drop.yes,,571422
 sanz,inflectional_synthesis_of_the_verb,inflectional_synthesis_of_the_verb.yes,,571422
+dinka,branching,branching.left-headed,,van2015uniform
+dinka,case_marking,case_marking.yes,Only on the in-situ subject,van2015uniform
+dinka,agr_subj,agr_subj.yes,Only if the subject is the discourse-marked,van2015uniform
+dinka,agr_oblique,agr_oblique.yes,Only if the oblique phrase is discourse-marked,van2015uniform
+dinka,agr_io,agr_io.yes,Only if the indirect object is discourse-marked,van2015uniform
+dinka,agr_do,agr_do.yes,Only if the direcot object is discourse-marked,van2015uniform
+dinka,agr_topic,agr_topic.yes,,van2015uniform
+dinka,pred_agreement,pred_agreement.yes,,van2015uniform
+dinka,agr_adjunct,agr_adjunct.yes,Only if the adjunct is discourse-marked,van2015uniform
+dinka,wh_in_situ,wh_in_situ.yes,"optional, clefting is the alternative",van2015uniform
+dinka,pro_drop,pro_drop.yes,"""Pro-drop in Dinka is restricted to clause-initial position and exclusively targets 3rd person DPs, giving rise to a partial pro-drop pattern of sorts. It may seem initially plausible to link this to the fact that only 3rd person DPs trigger overt agreement, but this cannot be the full story. There are clauses in which no overt agreement is found for 3rd person DPs (interrogative clauses, for example). In such environments, the same partial pro-drop pattern is found.""",van2015uniform
+dinka,agr_finite,agr_finite.yes,,van2015uniform
+dinka,agr_nonfinite,agr_nonfinite.no,,van2015uniform
+dinka,agr_compl,agr_compl.no,,van2015uniform
+dinka,scrambling,scrambling.yes,,van2015two
+dinka,word_order_nadj,word_order_basic.no dominant,,van2015uniform
+dinka,agr_focus,agr_focus.yes,,van2015uniform
+dinka,alignment,alignment.neutral,,van2015uniform

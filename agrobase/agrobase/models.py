@@ -17,3 +17,10 @@ class SentenceParameter(Base):
 
     sentence = relationship(common.Sentence, backref='parameter_links')
     parameter = relationship(common.Parameter, backref='sentence_links')
+
+def includeme(config):
+    """
+    Pyramid expects this function when we do `config.include('agrobase.models')`.
+    For now it does nothing, but later here we could register custom models/adapters.
+    """
+    pass
