@@ -1,6 +1,10 @@
 from clld.web.datatables.base import DataTable, Col, LinkCol
 from clld.db.meta import DBSession
 from clld.db.models import common
+from clld.web.datatables.language import Languages as _Languages
+from clld.web.util.helpers import link
+from agrobase import models
+
 
 
 class GeneticCol(Col):
@@ -13,6 +17,48 @@ class GeneticCol(Col):
 
     def format(self, lang):
         return (lang.jsondata or {}).get('genetic', '')
+
+
+class SourcesCol(Col):
+    __constraints__ = [common.Language]
+
+    def __init__(self, dt, name='sources'):
+        Col.__init__(self, dt, name, sTitle='Sources',
+                     bSortable=False, bSearchable=False)
+
+    def format(self, item):
+        """Список источников типа 'Corbett 2010', 'Van Urk 2015' и т.п."""
+        seen = set()
+        parts = []
+
+        for vs in item.valuesets:        # стандартная связь common.Language -> ValueSet
+            for ref in vs.references:    # ValueSetReference
+                src = ref.source
+                if not src or src.id in seen:
+                    continue
+                seen.add(src.id)
+                # ссылка как на странице Sources:
+                parts.append(link(self.dt.req, src, label=src.name))
+
+        return ', '.join(parts)
+
+
+class LanguagesDataTable(_Languages):
+    """Переопределяем стандартную таблицу языков."""
+
+    def col_defs(self):
+        return [
+            # Id как ссылка
+            LinkCol(self, 'id',
+                    model_col=common.Language.id,
+                    sTitle='Id'),
+            # Name как ссылка
+            LinkCol(self, 'name',
+                    model_col=common.Language.name,
+                    sTitle='Name'),
+            GeneticCol(self),
+            SourcesCol(self),
+        ]
 
 
 class ParamValueCol(Col):
@@ -113,4 +159,4 @@ class AgreementLanguageTable(DataTable):
 
 
 def includeme(config):
-    config.register_datatable('agreement_table', AgreementLanguageTable)
+    config.register_datatable('languages', LanguagesDataTable)
