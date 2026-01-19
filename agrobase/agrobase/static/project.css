@@ -1,1 +1,30 @@
+/* Карта на главной */
 
+.home-language-map-wrapper {
+  margin-top: 2em;
+}
+
+/* делаем карту на всю ширину окна браузера */
+.home-language-map {
+  height: 420px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+
+  /* фокус: выходим из "узкой" центральной колонки
+     и растягиваемся на всю ширину окна */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+/* Строка "N languages already in our database" */
+.home-language-map-count {
+  margin-top: 0.7em;
+  font-weight: bold;
+  font-size: 15px;
+  color: #000;        /* чёрный */
+}
+
+.navbar .nav.pull-right {
+  display: none;
+}
