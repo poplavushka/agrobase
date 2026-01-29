@@ -3,14 +3,23 @@
 <%def name="sidebar()">
     ## Пустой сайдбар — правая колонка будет пустой.
 </%def>
-
-<h2>Welcome to AGRobase</h2>
-
-<p class="lead">
-    A database of Agreement Features.
-    Explore agreement features via the Agreement table. If you have any suggestions,
-    please write us via the Feedback link in the menu.
+<hr/>
 </p>
+<h3>Welcome to the AGRoBase</h3>
+
+<p class="agro-lead">
+  An online database on Agreement properties of world’s languages.
+</p>
+
+<h3>How to use AGRoBase</h3>
+
+<p class="agro-text">
+  The database contains grammatical information on agreement features in a sample of world’s languages.
+  This page <a href="${request.route_url('parameters')}">contains the list of agreement features</a>.
+  The list of the languages can be found <a href="${request.route_url('languages')}">here</a>.
+  Here you can <a href="${request.route_url('contact')}">leave your feedback</a> on the project.
+</p>
+
 
 <div id="home-language-map-wrapper" class="home-language-map-wrapper">
   <h3>Languages in AGRobase</h3>

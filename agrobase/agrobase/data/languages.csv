@@ -1,5 +1,6 @@
-ID,Name,Glottocode,Genetic,Latitude,Longitude
-rus,Russian,rus1263,Indo-European,59,50
-sanz,Sanzhi Dargwa,sanz1248,Nakh-Dagestanian,41.98,47.57
-dinka,South Eastern Dinka,sout2834,Nilotic,7.02,31.29
-nenets,Forest Nenets,fore1274,Uralic,63.72,71.97
+ID,Name,Glottocode,Genetic/Family,Genetic/Branch,Latitude,Longitude
+rus,Russian,rus1263,Indo-European,Balto-Slavic,59,50
+sanz,Sanzhi Dargwa,sanz1248,Nakh-Dagestanian,Dargwic,41.98,47.57
+dinka,South Eastern Dinka,sout2834,Nilotic,Western Nilotic,7.02,31.29
+nenets,Forest Nenets,fore1274,Uralic,Samoyedic,63.72,71.97
+tamil,Tamil,tami1289,Dravidian,South Dravidian ,10.52,78.83

@@ -1,14 +1,13 @@
 <%inherit file="agrobase.mako"/>
 
-<%block name="title">Agreement & metadata table</%block>
+<%block name="title">Agreement table</%block>
 
 <h1>Agreement features</h1>
 
 <p class="lead">
-    Use the filters below to select languages with particular agreement profiles.
+  Use the filters below to select languages with particular agreement profiles (See the results in a table below).
 </p>
 
-<!-- Переключатель вида результата: таблица / карта -->
 <div id="agreement-view-toggle" class="btn-toolbar" style="margin-bottom: 1em;">
   <div class="btn-group" data-toggle="buttons-radio">
     <button type="button"
@@ -24,57 +23,44 @@
   </div>
 </div>
 
-<!-- чекбоксы: какие группы признаков показывать как колонки -->
-<form class="form-inline" method="get" style="margin-bottom: 1em;">
-  <label class="checkbox inline">
-    <input type="hidden" name="show_meta" value="0"/>
-    <input type="checkbox" name="show_meta" value="1"
-           ${'checked' if show_meta else ''}/>
-    Show language metadata
-  </label>
-
-  <label class="checkbox inline" style="margin-left: 1em;">
-    <input type="hidden" name="show_agr" value="0"/>
-    <input type="checkbox" name="show_agr" value="1"
-           ${'checked' if show_agr else ''}/>
-    Show agreement features
-  </label>
-
-  <button type="submit" class="btn" style="margin-left: 1em;">
-    Update
-  </button>
-</form>
-
 <%
-    # уникальные генетические семьи для фильтра
-    families = sorted({
-        (l.jsondata or {}).get('genetic', '')
-        for l in languages
-        if (l.jsondata or {}).get('genetic', '')
-    })
+  import collections, json
 
-    # Мэппинг: pk параметра -> индекс колонки в таблице agreement-table
-    # 0 = Language, 1 = Genetic, дальше подряд meta, потом agreement
-    param_col_index = {}
-    col = 2
-    if show_meta:
-        for p in meta_params:
-            param_col_index[p.pk] = col
-            col += 1
-    if show_agr:
-        for p in agr_params:
-            param_col_index[p.pk] = col
-            col += 1
+  def _family(l):
+      jd = l.jsondata or {}
+      return (jd.get('genetic_family') or jd.get('genetic') or '').strip() or 'Unknown'
+
+  def _branch(l):
+      jd = l.jsondata or {}
+      return (jd.get('genetic_branch') or '').strip() or 'Unknown'
+
+  # Family -> Branch -> [languages]
+  tree = collections.defaultdict(lambda: collections.defaultdict(list))
+  for l in languages:
+      tree[_family(l)][_branch(l)].append(l)
+
+  tree_sorted = []
+  for fam in sorted(tree.keys()):
+      branches = []
+      for br in sorted(tree[fam].keys()):
+          langs = sorted(tree[fam][br], key=lambda x: x.name)
+          branches.append((br, langs))
+      tree_sorted.append((fam, branches))
+
+  agr_ids_json  = json.dumps([p.id for p in (agr_params or [])])
+  meta_ids_json = json.dumps([p.id for p in (meta_params or [])])
+
+  agr_param_ids_set = set([p.id for p in (agr_params or [])])
+  meta_param_ids_set = set([p.id for p in (meta_params or [])])
 %>
 
 <div class="well" id="agreement-filter-panel">
   <h3 class="filter-main-title">Filter by features</h3>
   <p>
-    Choose values for any subset of features. Columns with <strong>Any</strong> are ignored.
+    Choose values for any subset of features. Features with <strong>Any</strong> are ignored.
   </p>
 
-  <!-- 1. Agreement features – всегда видны -->
-  % if show_agr and agr_hyperparams:
+  % if agr_hyperparams:
     <fieldset class="filter-section">
       <legend class="filter-section-title">Agreement features</legend>
 
@@ -88,8 +74,8 @@
             </span>
           </summary>
 
-          <% col_hp = param_col_index.get(hp.pk) %>
-          % if col_hp is not None:
+          ## ВАЖНО: как в старой версии — рендерим фильтр для hp только если по нему реально есть колонка в таблице
+          % if hp.id in agr_param_ids_set:
             <label style="display: block; margin: 4px 0;">
               <span class="param-info"
                     data-param-name="${hp.name}"
@@ -97,7 +83,7 @@
                 ${hp.name}
               </span>:
               <select class="feature-filter input-small"
-                      data-column="${col_hp}"
+                      data-group="agreement"
                       data-param-id="${hp.id}"
                       data-param-name="${hp.name}">
                 <option value="">Any</option>
@@ -111,8 +97,7 @@
           % endif
 
           % for p in agr_children_map.get(hp.id, []):
-            <% col_index = param_col_index.get(p.pk) %>
-            % if col_index is not None:
+            % if p.id in agr_param_ids_set:
               <label style="display: block; margin: 4px 0 4px 1.5em;">
                 <span class="param-info"
                       data-param-name="${p.name}"
@@ -120,7 +105,7 @@
                   ${p.name}
                 </span>:
                 <select class="feature-filter input-small"
-                        data-column="${col_index}"
+                        data-group="agreement"
                         data-param-id="${p.id}"
                         data-param-name="${p.name}">
                   <option value="">Any</option>
@@ -136,90 +121,92 @@
         </details>
       % endfor
     </fieldset>
-  % else:
-    <p class="muted">
-      Turn on <strong>Show agreement features</strong> above to filter by them.
-    </p>
   % endif
 
-  <!-- 2. Фильтр по языкам / генетике в раскрывающемся блоке -->
-  <details class="filter-section filter-section-secondary">
-    <summary class="filter-summary">
-      Filter by languages &amp; families
-    </summary>
+  <details class="filter-section filter-section-secondary" open>
+    <summary class="filter-summary">Filter by languages</summary>
 
     <fieldset style="margin-top: 0.5em;">
-      <legend class="filter-section-subtitle">Languages and genetic</legend>
+      <legend class="filter-section-subtitle">Languages</legend>
 
       <div style="font-size: 90%; color: #555; margin-bottom: 0.5em;">
-        Check any number of languages / families.<br/>
-        If <strong>Any</strong> is checked, the corresponding filter is ignored.
+        Search by family, branch, or language name. If nothing is selected, all languages are included.
       </div>
 
-      <!-- Языки -->
-      <div style="display: inline-block; margin-right: 2em; vertical-align: top;">
-        <label>
-          Language:
-          <input type="text"
-                 id="language-filter-search"
-                 class="input-medium"
-                 placeholder="Search languages..."
-                 style="display: block; margin-bottom: 0.3em;"/>
-          <div id="language-checkboxes"
-               style="max-height: 180px; overflow-y: auto; border: 1px solid #ddd; padding: 4px;">
-            <label class="checkbox">
-              <input type="checkbox" class="language-checkbox" value="" checked="checked"/>
-              Any
-            </label>
-            % for lang in languages:
-              <label class="checkbox">
-                <input type="checkbox" class="language-checkbox" value="${lang.name}"/>
-                ${lang.name}
-              </label>
-            % endfor
-          </div>
-        </label>
-      </div>
+      <input type="text"
+             id="lang-tree-search"
+             class="input-large"
+             placeholder="Search family / branch / language..."
+             style="display: block; margin-bottom: 0.5em;"/>
 
-      <!-- Генетика -->
-      <div style="display: inline-block; vertical-align: top;">
-        <label>
-          Genetic:
-          <input type="text"
-                 id="genetic-filter-search"
-                 class="input-medium"
-                 placeholder="Search families..."
-                 style="display: block; margin-bottom: 0.3em;"/>
-          <div id="genetic-checkboxes"
-               style="max-height: 180px; overflow-y: auto; border: 1px solid #ddd; padding: 4px;">
-            <label class="checkbox">
-              <input type="checkbox" class="genetic-checkbox" value="" checked="checked"/>
-              Any
-            </label>
-            % for fam in families:
-              <label class="checkbox">
-                <input type="checkbox" class="genetic-checkbox" value="${fam}"/>
+      <label class="checkbox" style="margin-bottom: 0.4em;">
+        <input type="checkbox" id="lang-any" checked="checked"/>
+        Any (all languages)
+      </label>
+
+      <div id="lang-tree"
+           style="max-height: 260px; overflow-y: auto; border: 1px solid #ddd; padding: 6px; background: #fff;">
+
+        % for fam, branches in tree_sorted:
+          <details class="lang-node family-node"
+                   data-kind="family"
+                   data-search="${(fam or '').lower()}">
+            <summary class="lang-node-summary">
+              <label class="checkbox inline" style="margin: 0; font-weight: 600;">
+                <input type="checkbox" class="family-checkbox"
+                       data-family="${fam}"/>
                 ${fam}
               </label>
-            % endfor
-          </div>
-        </label>
+            </summary>
+
+            <div style="margin-left: 1.2em; margin-top: 0.25em;">
+              % for br, langs in branches:
+                <details class="lang-node branch-node"
+                         data-kind="branch"
+                         data-family="${fam}"
+                         data-search="${((fam or '') + ' ' + (br or '')).lower()}">
+                  <summary class="lang-node-summary">
+                    <label class="checkbox inline" style="margin: 0;">
+                      <input type="checkbox" class="branch-checkbox"
+                             data-family="${fam}"
+                             data-branch="${br}"/>
+                      ${br}
+                    </label>
+                  </summary>
+
+                  <div style="margin-left: 1.2em; margin-top: 0.25em;">
+                    % for l in langs:
+                      <label class="checkbox language-leaf"
+                             data-kind="language"
+                             data-family="${fam}"
+                             data-branch="${br}"
+                             data-search="${((fam or '') + ' ' + (br or '') + ' ' + (l.name or '')).lower()}">
+                        <input type="checkbox"
+                               class="language-checkbox"
+                               value="${l.id}"
+                               data-lang-name="${l.name}"/>
+                        ${l.name}
+                      </label>
+                    % endfor
+                  </div>
+                </details>
+              % endfor
+            </div>
+          </details>
+        % endfor
+
       </div>
     </fieldset>
   </details>
 
-  <!-- 3. Metadata – отдельный блок -->
-  % if show_meta and meta_params:
+  % if meta_params:
     <details class="filter-section filter-section-secondary">
-      <summary class="filter-summary">
-        Filter by language metadata
-      </summary>
+      <summary class="filter-summary">Macro-parameters</summary>
 
       <fieldset style="margin-top: 0.5em;">
-        <legend class="filter-section-subtitle">Language metadata</legend>
+        <legend class="filter-section-subtitle">Macro-parameters</legend>
         % for p in meta_params:
-          <% col_index = param_col_index.get(p.pk) %>
-          % if col_index is not None:
+          % if p.id in meta_param_ids_set:
             <label style="display: block; margin-bottom: 4px;">
               <span class="param-info"
                     data-param-name="${p.name}"
@@ -227,7 +214,7 @@
                 ${p.name}
               </span>:
               <select class="feature-filter input-small"
-                      data-column="${col_index}"
+                      data-group="macro"
                       data-param-id="${p.id}"
                       data-param-name="${p.name}">
                 <option value="">Any</option>
@@ -245,73 +232,83 @@
   % endif
 </div>
 
-<!-- Кнопка "Show full table" и подпись выносим ПОД серый блок -->
 <div id="agreement-filter-actions" class="filter-actions clearfix">
-  <button id="show-full-table" class="btn btn-small pull-right">
+  <button type="button" id="show-full-table" class="btn btn-small pull-right">
     Show full table
   </button>
-  <span class="help-block" style="margin-right: 6em;">
-    Reset all filters and show all columns.
+
+  % if meta_params:
+    <button type="button" id="toggle-macro-columns" class="btn btn-small pull-right" style="margin-right: 0.5em;">
+      Show macro-parameters
+    </button>
+  % endif
+
+  <button type="button" id="toggle-all-agreement" class="btn btn-small pull-right" style="margin-right: 0.5em; display: none;">
+    Show other agreement columns
+  </button>
+
+  <span class="help-block" style="margin-right: 18em;">
+    If you click on "Show macro-parameters" --> they will appear at the end of the table.
+    If you click on "Show full table" --> your filters will reset
   </span>
 </div>
 
-<!-- ВИД 1: таблица -->
 <div id="agreement-table-view">
   <div class="agreement-table-wrapper">
     <table id="agreement-table" class="table table-condensed table-striped">
       <thead>
         <tr>
           <th>Language</th>
-          <th>Genetic</th>
-          % if show_meta:
-            % for p in meta_params:
-              <th>${p.name}</th>
-            % endfor
-          % endif
-          % if show_agr:
-            % for p in agr_params:
-              <th>${p.name}</th>
-            % endfor
-          % endif
+          <th>Genetic/Family</th>
+          <th>Genetic/Branch</th>
+
+          % for p in (agr_params or []):
+            <th class="col-agr" data-param-id="${p.id}">${p.name}</th>
+          % endfor
+
+          % for p in (meta_params or []):
+            <th class="col-macro" data-param-id="${p.id}">${p.name}</th>
+          % endfor
         </tr>
       </thead>
       <tbody>
       % for lang in languages:
-        <%  # координаты: стараемся вытащить из разных возможных полей
-            _lat = getattr(lang, 'latitude', '')
-            _lon = getattr(lang, 'longitude', '')
-            jd = lang.jsondata or {}
-            if _lat in (None, ''):
-                _lat = jd.get('latitude') or jd.get('Latitude') or ''
-            if _lon in (None, ''):
-                _lon = jd.get('longitude') or jd.get('Longitude') or ''
+        <%
+          jd = lang.jsondata or {}
+          fam = (jd.get('genetic_family') or jd.get('genetic') or '').strip() or 'Unknown'
+          br  = (jd.get('genetic_branch') or '').strip() or 'Unknown'
+
+          _lat = getattr(lang, 'latitude', None)
+          _lon = getattr(lang, 'longitude', None)
+          if _lat in (None, ''):
+              _lat = jd.get('latitude') or jd.get('Latitude') or ''
+          if _lon in (None, ''):
+              _lon = jd.get('longitude') or jd.get('Longitude') or ''
         %>
         <tr data-lang-id="${lang.id}"
+            data-family="${fam}"
+            data-branch="${br}"
             data-lat="${_lat}"
             data-lon="${_lon}">
-          <!-- первые две колонки: только язык и генетика -->
           <td><a href="${request.resource_url(lang)}">${lang.name}</a></td>
-          <td>${(lang.jsondata or {}).get('genetic', '')}</td>
+          <td>${fam}</td>
+          <td>${br}</td>
 
-          % if show_meta:
-            % for p in meta_params:
-              <td class="feature-cell"
-                  data-param-id="${p.id}"
-                  data-param-name="${p.name}">
-                ${value_map.get((lang.pk, p.pk), '')}
-              </td>
-            % endfor
-          % endif
+          % for p in (agr_params or []):
+            <td class="feature-cell col-agr"
+                data-param-id="${p.id}"
+                data-param-name="${p.name}">
+              ${value_map.get((lang.pk, p.pk), '')}
+            </td>
+          % endfor
 
-          % if show_agr:
-            % for p in agr_params:
-              <td class="feature-cell"
-                  data-param-id="${p.id}"
-                  data-param-name="${p.name}">
-                ${value_map.get((lang.pk, p.pk), '')}
-              </td>
-            % endfor
-          % endif
+          % for p in (meta_params or []):
+            <td class="feature-cell col-macro"
+                data-param-id="${p.id}"
+                data-param-name="${p.name}">
+              ${value_map.get((lang.pk, p.pk), '')}
+            </td>
+          % endfor
         </tr>
       % endfor
       </tbody>
@@ -319,7 +316,6 @@
   </div>
 </div>
 
-<!-- ВИД 2: карта -->
 <div id="agreement-map-view" style="display: none; margin-top: 1em;">
   <div id="agreement-map" style="height: 480px; margin-bottom: 0.5em;"></div>
 
@@ -340,7 +336,6 @@
   </div>
 </div>
 
-<!-- Модальное окно для описаний признаков и примеров -->
 <div id="feature-modal" class="modal hide fade">
   <div class="modal-header">
     <button type="button" class="close" data-dismiss="modal">×</button>
@@ -352,646 +347,585 @@
 </div>
 
 <style>
-  .example {
-    margin-bottom: 0.8em;
-  }
-  .ig-example pre {
-    margin: 0;
-    font-family: monospace;
-    white-space: pre-wrap;
-  }
-  .ig-translation {
-    margin-top: 0.25em;
-  }
+  #agreement-filter-panel { margin-bottom: 1em; }
+  #agreement-filter-panel fieldset { border: none; padding: 0; margin: 0 0 0.75em; }
+  #agreement-filter-panel legend { font-size: 14px; font-weight: bold; margin-bottom: 0.35em; }
+  #agreement-filter-panel legend.filter-section-title { font-size: 22px; font-weight: 700; margin-bottom: 0.7em; }
 
-  #agreement-filter-panel {
-    margin-bottom: 1em;
+  .agreement-table-wrapper { overflow-x: auto; padding-top: 0.5em; border-top: 1px solid #eee; }
+  #agreement-table { border-collapse: collapse; width: auto; }
+  #agreement-table th, #agreement-table td {
+    font-size: 11px; padding: 3px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  #agreement-filter-panel fieldset {
-    border: none;
-    padding: 0;
-    margin: 0 0 0.75em;
+  #agreement-table th { white-space: normal; word-wrap: break-word; }
+
+  #agreement-table th:nth-child(-n+3),
+  #agreement-table td:nth-child(-n+3) { min-width: 160px; white-space: normal; }
+  #agreement-table th:nth-child(n+4),
+  #agreement-table td:nth-child(n+4) { max-width: 90px; }
+
+  #agreement-table th.col-macro,
+  #agreement-table td.col-macro { display: none; }
+
+  .param-info { cursor: help; border-bottom: 1px dotted #999; color: #444; }
+  .param-info:hover { color: #0056b3; }
+
+  #agreement-table td.feature-cell { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-decoration-thickness: 1px; }
+  #agreement-table td.feature-cell:hover { background-color: #fff8dc !important; }
+
+  .filter-main-title { margin-top: 0; font-size: 20px; font-weight: 600; }
+  .filter-section { margin-bottom: 0.75em; }
+  .filter-section-title { font-size: 22px; font-weight: 700; margin-bottom: 0.7em; }
+  .filter-section-subtitle { font-size: 15px; font-weight: 600; margin-bottom: 0.4em; }
+
+  .filter-section-secondary { border-top: 1px solid #ddd; padding-top: 0.75em; margin-top: 0.75em; }
+  details summary::-webkit-details-marker { display: none; }
+
+  .feature-group-summary, .filter-summary, .lang-node-summary {
+    cursor: pointer; padding: 6px 0; margin: 0; list-style: none; font-weight: 600; font-size: 15px;
   }
-  /* общий стиль для legend в панели */
-  #agreement-filter-panel legend {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 0.35em;
+  .feature-group-summary::before, .filter-summary::before, .lang-node-summary::before {
+    content: '▸'; display: inline-block; margin-right: 8px; font-size: 18px; line-height: 1; vertical-align: middle;
+    transition: transform 0.15s ease; color: #444; font-weight: 700;
   }
-  /* а для Agreement features — покрупнее */
-  #agreement-filter-panel legend.filter-section-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 0.7em;
-  }
-
-  #agreement-filter-panel .filter-column {
-    margin-bottom: 0.75em;
-  }
-
-  @media (max-width: 979px) {
-    #agreement-filter-panel .filter-column-left,
-    #agreement-filter-panel .filter-column-right {
-      float: none;
-      width: 100%;
-      margin-left: 0;
-    }
-  }
-
-    .agreement-table-wrapper {
-      overflow-x: auto;
-      padding-top: 0.5em;
-      border-top: 1px solid #eee;
-    }
-
-    /* НЕ фиксируем ширину таблицы, чтобы первые колонки не сжимались до нуля */
-    #agreement-table {
-      border-collapse: collapse;
-      width: auto;
-    }
-
-    #agreement-table th,
-    #agreement-table td {
-      font-size: 11px;
-      padding: 3px 4px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    #agreement-table th {
-      white-space: normal;
-      word-wrap: break-word;   /* заголовки могут быть многострочными */
-    }
-
-/* Language и Genetic делаем пошире и не даём их съесть */
-#agreement-table th:nth-child(-n+2),
-#agreement-table td:nth-child(-n+2) {
-min-width: 140px;
-    white-space: normal;
-}
-
-/* для всех остальных колонок только ограничиваем максимум */
-#agreement-table th:nth-child(n+3),
-#agreement-table td:nth-child(n+3) {
-  max-width: 90px;
-}
-
-
-  .param-info {
-    cursor: help;
-    border-bottom: 1px dotted #999;
-    color: #444;
-  }
-  .param-info:hover {
-    color: #0056b3;
-  }
-
-  #agreement-table td.feature-cell {
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-decoration-thickness: 1px;
-  }
-
-  #agreement-table td.feature-cell:hover {
-    background-color: #fff8dc !important;
-  }
-
-  .agreement-map-marker .map-marker-symbol {
-    font-size: 18px;
-    line-height: 20px;
-  }
-  #agreement-map-legend .legend-item {
-    margin-bottom: 3px;
-  }
-  #agreement-map-legend .legend-symbol {
-    display: inline-block;
-    width: 18px;
-    text-align: center;
-    margin-right: 4px;
-  }
-
-  /* главный заголовок панели фильтров */
-  .filter-main-title {
-    margin-top: 0;
-    font-size: 20px;
-    font-weight: 600;
-  }
-
-  .filter-section {
-    margin-bottom: 0.75em;
-  }
-
-  .filter-section-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 0.7em;
-  }
-
-  .filter-section-subtitle {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 0.4em;
-  }
-
-  /* разделители для нижних блоков (languages / metadata) */
-  .filter-section-secondary {
-    border-top: 1px solid #ddd;
-    padding-top: 0.75em;
-    margin-top: 0.75em;
-  }
-
-  /* аккуратные стрелочки у раскрывающихся блоков */
-  details summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .feature-group-summary,
-  .filter-summary {
-    cursor: pointer;
-    padding: 6px 0;
-    margin: 0;
-    list-style: none;
-    font-weight: 600;
-    font-size: 15px;
-  }
-
-  .feature-group-summary::before,
-  .filter-summary::before {
-    content: '▸';
-    display: inline-block;
-    margin-right: 8px;
-    font-size: 18px;
-    line-height: 1;
-    vertical-align: middle;
-    transition: transform 0.15s ease;
-    color: #444;
-    font-weight: 700;
-  }
-
   details[open] > .feature-group-summary::before,
-  details[open] > .filter-summary::before {
-    transform: rotate(90deg);
-  }
+  details[open] > .filter-summary::before,
+  details[open] > .lang-node-summary::before { transform: rotate(90deg); }
 
-  /* внутри summary название фичи чуть крупнее */
-  .feature-group-summary .param-info {
-    font-size: 14px;
-    font-weight: 600;
-  }
+  #agreement-filter-actions { margin-top: 0.75em; margin-bottom: 0.5em; }
 
-  /* блок с кнопкой "Show full table" под фильтрами */
-  #agreement-filter-actions {
-    margin-top: 0.75em;
-    margin-bottom: 0.5em;
-  }
-
-  /* Крупные кнопки переключения Table / Map и мягкий синий */
-  #agreement-view-toggle .btn-toggle {
-    font-size: 14px;
-    padding: 6px 18px;
-  }
-
-  #agreement-view-toggle .btn-toggle.btn-primary {
-    background-color: #4e8cd4;   /* мягкий синий */
-    border-color: #417fca;
-  }
-
+  #agreement-view-toggle .btn-toggle { font-size: 14px; padding: 6px 18px; }
+  #agreement-view-toggle .btn-toggle.btn-primary { background-color: #4e8cd4; border-color: #417fca; }
   #agreement-view-toggle .btn-toggle.btn-primary:hover,
-  #agreement-view-toggle .btn-toggle.btn-primary:focus {
-    background-color: #447fc3;
-    border-color: #386fae;
-  }
+  #agreement-view-toggle .btn-toggle.btn-primary:focus { background-color: #447fc3; border-color: #386fae; }
+
+  .agreement-map-marker .map-marker-symbol { font-size: 18px; line-height: 20px; }
+  #agreement-map-legend .legend-item { margin-bottom: 3px; }
+  #agreement-map-legend .legend-symbol { display: inline-block; width: 18px; text-align: center; margin-right: 4px; }
 </style>
 
 <script type="text/javascript">
-  $(function () {
-    function escapeHtml(text) {
-      return $('<div/>').text(text || '').html();
+(function () {
+  // Ждем jQuery даже если он подключается позже (типично для базового шаблона)
+  function bootWhenJQueryReady() {
+    if (!window.jQuery) {
+      setTimeout(bootWhenJQueryReady, 30);
+      return;
     }
 
-    function stripOuterQuotes(text) {
-      if (!text) return '';
-      text = text.trim();
-      if (!text) return '';
-      var first = text.charAt(0);
-      var last = text.charAt(text.length - 1);
-      var pairs = {
-        '"': '"',
-        "'": "'",
-        '«': '»',
-        '“': '”',
-        '„': '“',
-        '‘': '’'
-      };
-      if (pairs[first] && last === pairs[first]) {
-        return text.substring(1, text.length - 1).trim();
+    var jq = window.jQuery;
+    jq(function () {
+      var $ = jq;
+
+      function escapeHtml(text) {
+        return $('<div/>').text(text || '').html();
       }
-      return text;
-    }
 
-    // --- Переключатель Table / Map -----------------------------------------
-    $('#agreement-view-toggle button').on('click', function () {
-      var view = $(this).data('view');
-      $('#agreement-view-toggle button').removeClass('active');
-      $(this).addClass('active');
-
-      if (view === 'table') {
-        $('#agreement-table-view').show();
-        $('#agreement-map-view').hide();
-      } else {
-        $('#agreement-table-view').hide();
-        $('#agreement-map-view').show();
-        ensureMapInitialized();
-        updateMapFromTable();
+      function stripOuterQuotes(text) {
+        if (!text) return '';
+        text = ('' + text).trim();
+        if (!text) return '';
+        var first = text.charAt(0);
+        var last = text.charAt(text.length - 1);
+        var pairs = {'"':'"', "'":"'", '«':'»', '“':'”', '„':'“', '‘':'’'};
+        if (pairs[first] && last === pairs[first]) {
+          return text.substring(1, text.length - 1).trim();
+        }
+        return text;
       }
-    });
 
-    // --- Сбор активных фильтров по признакам -------------------------------
-    function getActiveFeatureFilters() {
-      var filters = [];
-      $('.feature-filter').each(function () {
-        var val = $(this).val();
-        if (!val) return;
-        filters.push({
-          paramId: $(this).data('param-id'),
-          paramName: $(this).data('param-name') || '',
-          value: val
+      function norm(s) {
+        s = (s == null) ? '' : ('' + s);
+        s = s.replace(/\u00A0/g, ' ');     // NBSP -> space
+        s = stripOuterQuotes(s);
+        s = s.trim().toLowerCase();
+        s = s.replace(/\s+/g, ' ');
+        return s;
+      }
+
+      var ALL_AGR_PARAM_IDS  = ${agr_ids_json|n};
+      var ALL_META_PARAM_IDS = ${meta_ids_json|n};
+
+      var showMacroColumns = false;
+      var showAllAgreementColumns = false;
+
+      function markRowFiltered($row, filteredOut) {
+        $row.toggleClass('filtered-out', !!filteredOut);
+        $row.toggle(!filteredOut);
+      }
+
+      // --- Table/Map toggle ---
+      $(document).on('click', '#agreement-view-toggle button', function (e) {
+        e.preventDefault();
+        var view = $(this).data('view');
+
+        $('#agreement-view-toggle button').removeClass('active');
+        $(this).addClass('active');
+
+        if (view === 'table') {
+          $('#agreement-table-view').show();
+          $('#agreement-map-view').hide();
+        } else {
+          $('#agreement-table-view').hide();
+          $('#agreement-map-view').show();
+          ensureMapInitialized();
+          setTimeout(function () {
+            if (agreementMap) agreementMap.invalidateSize();
+            updateMapFromTable();
+          }, 0);
+        }
+      });
+
+      // --- active feature filters (agreement + macro) ---
+      function getActiveFeatureFilters() {
+        var filters = [];
+        $('.feature-filter').each(function () {
+          var val = $(this).val();
+          if (!val) return;
+          filters.push({
+            group: '' + ($(this).data('group') || ''),
+            paramId: '' + ($(this).data('param-id') || ''),
+            paramName: '' + ($(this).data('param-name') || ''),
+            value: '' + val
+          });
         });
-      });
-      filters.sort(function (a, b) {
-        if (a.paramName < b.paramName) return -1;
-        if (a.paramName > b.paramName) return 1;
-        return 0;
-      });
-      return filters;
-    }
+        filters.sort(function (a, b) {
+          if (a.paramName < b.paramName) return -1;
+          if (a.paramName > b.paramName) return 1;
+          return 0;
+        });
+        return filters;
+      }
 
-    // --- Применение фильтров к таблице -------------------------------------
-    function applyAllFilters() {
-      var featureFilters = getActiveFeatureFilters();
+      function activeAgreementFilterIds() {
+        var ids = [];
+        $('.feature-filter[data-group="agreement"]').each(function () {
+          var val = $(this).val();
+          if (!val) return;
+          ids.push('' + ($(this).data('param-id') || ''));
+        });
+        return ids;
+      }
 
-      // языки
-      var selectedLangs = [];
-      $('.language-checkbox:checked').each(function () {
-        selectedLangs.push($(this).val());
-      });
-      var langAny = (!selectedLangs.length ||
-                     selectedLangs.indexOf('') !== -1);
-      selectedLangs = selectedLangs.filter(function (v) { return v !== ''; });
+      function activeMacroFilterIds() {
+        var ids = [];
+        $('.feature-filter[data-group="macro"]').each(function () {
+          var val = $(this).val();
+          if (!val) return;
+          ids.push('' + ($(this).data('param-id') || ''));
+        });
+        return ids;
+      }
 
-      // генетика
-      var selectedGen = [];
-      $('.genetic-checkbox:checked').each(function () {
-        selectedGen.push($(this).val());
-      });
-      var genAny = (!selectedGen.length ||
-                    selectedGen.indexOf('') !== -1);
-      selectedGen = selectedGen.filter(function (v) { return v !== ''; });
+      function setParamColumnVisible(paramId, visible) {
+        var pid = '' + paramId;
+        $('#agreement-table th[data-param-id="' + pid + '"], #agreement-table td[data-param-id="' + pid + '"]')
+          .toggle(!!visible);
+      }
 
-      $('#agreement-table tbody tr').each(function () {
-        var $row = $(this);
-        var visible = true;
+      function updateColumnVisibility() {
+        var agrActiveIds = activeAgreementFilterIds();
+        var anyAgrActive = agrActiveIds.length > 0;
 
-        // колонки 0 и 1: язык и генетика
-        var langName = $.trim($row.find('td').eq(0).text());
-        var genetic  = $.trim($row.find('td').eq(1).text());
-
-        if (!langAny) {
-          if ($.inArray(langName, selectedLangs) === -1) {
-            visible = false;
-          }
-        }
-        if (visible && !genAny) {
-          if ($.inArray(genetic, selectedGen) === -1) {
-            visible = false;
-          }
+        if (anyAgrActive) {
+          $('#toggle-all-agreement').show();
+        } else {
+          $('#toggle-all-agreement').hide();
+          showAllAgreementColumns = false;
         }
 
-        // фильтры по признакам
-        if (visible && featureFilters.length) {
-          for (var i = 0; i < featureFilters.length; i++) {
-            var f = featureFilters[i];
-            var $cell = $row.find('td.feature-cell[data-param-id="' + f.paramId + '"]');
-            var cellVal = $.trim($cell.text());
-            if (!cellVal || cellVal !== f.value) {
-              visible = false;
-              break;
+        // AGREEMENT columns
+        if (!anyAgrActive) {
+          for (var i = 0; i < ALL_AGR_PARAM_IDS.length; i++) {
+            setParamColumnVisible(ALL_AGR_PARAM_IDS[i], true);
+          }
+        } else {
+          if (showAllAgreementColumns) {
+            for (var j = 0; j < ALL_AGR_PARAM_IDS.length; j++) {
+              setParamColumnVisible(ALL_AGR_PARAM_IDS[j], true);
+            }
+            $('#toggle-all-agreement').text('Hide other agreement columns');
+          } else {
+            for (var k = 0; k < ALL_AGR_PARAM_IDS.length; k++) {
+              var pid = '' + ALL_AGR_PARAM_IDS[k];
+              setParamColumnVisible(pid, $.inArray(pid, agrActiveIds) !== -1);
+            }
+            $('#toggle-all-agreement').text('Show other agreement columns');
+          }
+        }
+
+        // MACRO columns
+        if (!$('#toggle-macro-columns').length) return;
+
+        if (!showMacroColumns) {
+          for (var m = 0; m < ALL_META_PARAM_IDS.length; m++) {
+            setParamColumnVisible(ALL_META_PARAM_IDS[m], false);
+          }
+          $('#toggle-macro-columns').text('Show macro-parameters');
+        } else {
+          var macroActiveIds = activeMacroFilterIds();
+          if (macroActiveIds.length) {
+            for (var n = 0; n < ALL_META_PARAM_IDS.length; n++) {
+              var mpid = '' + ALL_META_PARAM_IDS[n];
+              setParamColumnVisible(mpid, $.inArray(mpid, macroActiveIds) !== -1);
+            }
+          } else {
+            for (var q = 0; q < ALL_META_PARAM_IDS.length; q++) {
+              setParamColumnVisible(ALL_META_PARAM_IDS[q], true);
             }
           }
+          $('#toggle-macro-columns').text('Hide macro-parameters');
         }
-
-        if (visible) {
-          $row.show();
-        } else {
-          $row.hide();
-        }
-      });
-
-      if ($('#agreement-map-view').is(':visible') && agreementMap) {
-        updateMapFromTable();
       }
-    }
 
-    // --- Обработчики фильтров ----------------------------------------------
-    $('.feature-filter').on('change', applyAllFilters);
-    $('.language-checkbox').on('change', applyAllFilters);
-    $('.genetic-checkbox').on('change', applyAllFilters);
-
-    $('#language-filter-search').on('keyup', function () {
-      var term = $(this).val().toLowerCase();
-      $('#language-checkboxes label.checkbox').each(function () {
-        var $lab = $(this);
-        var txt = $lab.text().toLowerCase();
-        var isAny = $lab.find('input').val() === '';
-        if (!term || isAny || txt.indexOf(term) !== -1) {
-          $lab.show();
-        } else {
-          $lab.hide();
-        }
-      });
-    });
-
-    $('#genetic-filter-search').on('keyup', function () {
-      var term = $(this).val().toLowerCase();
-      $('#genetic-checkboxes label.checkbox').each(function () {
-        var $lab = $(this);
-        var txt = $lab.text().toLowerCase();
-        var isAny = $lab.find('input').val() === '';
-        if (!term || isAny || txt.indexOf(term) !== -1) {
-          $lab.show();
-        } else {
-          $lab.hide();
-        }
-      });
-    });
-
-    // Кнопка "Show full table"
-    $('#show-full-table').on('click', function (e) {
-      e.preventDefault();
-
-      $('.feature-filter').val('');
-      $('.language-checkbox, .genetic-checkbox').prop('checked', false);
-      $('.language-checkbox[value=""], .genetic-checkbox[value=""]').prop('checked', true);
-
-      $('#language-filter-search').val('');
-      $('#genetic-filter-search').val('');
-      $('#language-checkboxes label.checkbox').show();
-      $('#genetic-checkboxes label.checkbox').show();
-
-      $('#agreement-table tbody tr').show();
-
-      if ($('#agreement-map-view').is(':visible') && agreementMap) {
-        updateMapFromTable();
+      // --- Language tree: Any logic + cascade ---
+      function syncAnyCheckbox() {
+        var anyChecked = $('.language-checkbox:checked').length === 0;
+        $('#lang-any').prop('checked', anyChecked);
       }
-    });
 
-    // --- Модалка: описание признака ----------------------------------------
-    $('.param-info').on('click', function (e) {
-      e.preventDefault();
-      var name = $(this).data('param-name');
-      var desc = $(this).data('param-desc') || 'No description available.';
-      $('#feature-modal .modal-header h3').text(name);
-      $('#feature-modal .modal-body').html('<p>' + escapeHtml(desc) + '</p>');
-      $('#feature-modal').modal('show');
-    });
+      $(document).on('change', '#lang-any', function () {
+        if ($(this).is(':checked')) {
+          $('.family-checkbox, .branch-checkbox, .language-checkbox').prop('checked', false);
+          applyAllFilters();
+        }
+      });
 
-    // --- Модалка: примеры ---------------------------------------------------
-    var featureExamplesUrl = "${request.route_url('feature_examples')}";
+      $(document).on('change', '.language-checkbox', function () {
+        if ($(this).is(':checked')) $('#lang-any').prop('checked', false);
+        else syncAnyCheckbox();
+        applyAllFilters();
+      });
 
-    $('#agreement-table').on('click', 'td.feature-cell', function () {
-      var value = $.trim($(this).text());
-      if (!value) return;
+      $(document).on('change', '.family-checkbox', function () {
+        var fam = $(this).data('family');
+        var checked = $(this).is(':checked');
+        $('#lang-any').prop('checked', false);
+        $('.branch-checkbox[data-family="' + fam + '"]').prop('checked', checked);
+        $('.language-leaf[data-family="' + fam + '"] .language-checkbox').prop('checked', checked);
+        if (!checked) syncAnyCheckbox();
+        applyAllFilters();
+      });
 
-      var $cell = $(this);
-      var paramId = $cell.data('param-id');
-      var paramName = $cell.data('param-name');
-      var $row = $cell.closest('tr');
-      var langId = $row.data('lang-id');
-      var langName = $.trim($row.find('td').eq(0).text());
+      $(document).on('change', '.branch-checkbox', function () {
+        var fam = $(this).data('family');
+        var br  = $(this).data('branch');
+        var checked = $(this).is(':checked');
+        $('#lang-any').prop('checked', false);
+        $('.language-leaf[data-family="' + fam + '"][data-branch="' + br + '"] .language-checkbox')
+          .prop('checked', checked);
+        if (!checked) syncAnyCheckbox();
+        applyAllFilters();
+      });
 
-      $('#feature-modal .modal-header h3').text(
-        paramName + ' = ' + value + ' — ' + langName
-      );
-      $('#feature-modal .modal-body').html('<p><em>Loading examples…</em></p>');
-      $('#feature-modal').modal('show');
-
-      $.getJSON(featureExamplesUrl, {lang: langId, param: paramId}, function (data) {
-        if (!data.ok || !data.examples || !data.examples.length) {
-          $('#feature-modal .modal-body').html(
-            '<p><em>No examples available for this cell.</em></p>'
-          );
+      $(document).on('keyup', '#lang-tree-search', function () {
+        var term = (($(this).val() || '') + '').toLowerCase().trim();
+        if (!term) {
+          $('#lang-tree .lang-node, #lang-tree .language-leaf').show();
           return;
         }
-        var html = '';
-        $.each(data.examples, function (i, ex) {
-          html += '<div class="example">';
 
-          var primary = stripOuterQuotes(ex.primary || '');
-          var gloss   = stripOuterQuotes(ex.gloss || '');
-          var trans   = stripOuterQuotes(ex.translation || '');
+        $('#lang-tree .family-node').hide();
+        $('#lang-tree .branch-node').hide();
+        $('#lang-tree .language-leaf').hide();
 
-          if (primary || gloss) {
-            html += '<div class="ig-example">';
-            if (primary) html += '<pre>' + escapeHtml(primary) + '</pre>';
-            if (gloss)   html += '<pre>' + escapeHtml(gloss)   + '</pre>';
-            html += '</div>';
-          }
-
-          if (trans) {
-            html += '<p class="ig-translation">&#8216;'
-                 + escapeHtml(trans)
-                 + '&#8217;</p>';
-          }
-
-          if (ex.url) {
-            html += '<p><a href="' + ex.url + '">View example page</a></p>';
-          }
-
-          html += '</div>';
-          if (i < data.examples.length - 1) {
-            html += '<hr/>';
+        $('#lang-tree [data-search]').each(function () {
+          var $el = $(this);
+          var hay = (($el.data('search') || '') + '');
+          if (hay.indexOf(term) !== -1) {
+            $el.show();
+            $el.parents('.family-node, .branch-node').show();
           }
         });
-        $('#feature-modal .modal-body').html(html);
-      }).fail(function () {
-        $('#feature-modal .modal-body').html(
-          '<p><em>Error loading examples.</em></p>'
-        );
       });
-    });
 
-    // -------- КАРТА ---------------------------------------------------------
-    var agreementMap = null;
-    var agreementMapLayer = null;
-    var markerColors = [
-      '#6baed6', '#9ecae1', '#74c476', '#a1d99b',
-      '#fbb4b9', '#fdd0a2', '#bcbddc', '#c7e9c0', '#f2f0f7'
-    ];
-    var markerShapes = ['circle', 'square', 'triangle', 'diamond', 'star'];
-    var shapeChars = {circle:'●', square:'■', triangle:'▲', diamond:'◆', star:'★'};
+      // --- Apply all filters (rows) ---
+      function applyAllFilters() {
+        var featureFilters = getActiveFeatureFilters();
 
-    function getCategoryStyle(index) {
-      var color = markerColors[index % markerColors.length];
-      var shape = markerShapes[Math.floor(index / markerColors.length) % markerShapes.length];
-      return {color: color, shape: shape};
-    }
+        var langAny = $('#lang-any').is(':checked');
+        var selectedLangIds = [];
+        $('.language-checkbox:checked').each(function () {
+          selectedLangIds.push('' + $(this).val());
+        });
 
-    function makeIconForStyle(style) {
-      if (typeof L === 'undefined') return null;
-      var symbol = shapeChars[style.shape] || '●';
-      var html = '<span class="map-marker-symbol" style="color:' + style.color + ';">' + symbol + '</span>';
-      return L.divIcon({
-        className: 'agreement-map-marker',
-        html: html,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      });
-    }
+        $('#agreement-table tbody tr').each(function () {
+          var $row = $(this);
+          var visible = true;
 
-    function renderLegend(categories) {
-      var $legend = $('#agreement-map-legend');
-      if (!categories.length) {
-        $legend.html('<p class="muted"><em>No languages to show on the map for the current filters.</em></p>');
-        return;
-      }
-      var total = 0;
-      $.each(categories, function (i, cat) { total += cat.count; });
+          var rowLangId = '' + ($row.data('lang-id') || '');
 
-      var html = '<strong>Legend</strong> ' +
-                 '<span class="muted">(languages on map: ' + total + ')</span>' +
-                 '<ul class="unstyled">';
-      $.each(categories, function (i, cat) {
-        var color = cat.style.color;
-        var shape = cat.style.shape;
-        var symbol = shapeChars[shape] || '●';
-        html += '<li class="legend-item">' +
-                '<span class="legend-symbol" style="color:' + color + ';">' + symbol + '</span>' +
-                escapeHtml(cat.label || 'All languages') + ' — ' +
-                '<span class="badge">' + cat.count + '</span>' +
-                '</li>';
-      });
-      html += '</ul>';
-      $legend.html(html);
-    }
-
-    function rowsForMap() {
-      var useAllRows = $('#map-include-other-values').is(':checked');
-      if (useAllRows) {
-        return $('#agreement-table tbody tr');
-      } else {
-        return $('#agreement-table tbody tr:visible');
-      }
-    }
-
-    function updateMapFromTable() {
-      if (!agreementMap || !agreementMapLayer) return;
-
-      agreementMapLayer.clearLayers();
-      var activeFilters = getActiveFeatureFilters();
-      var categoriesByKey = {};
-      var categories = [];
-
-      var $rows = rowsForMap();
-
-      $rows.each(function () {
-        var $row = $(this);
-
-        var lat = parseFloat($row.attr('data-lat'));
-        var lon = parseFloat($row.attr('data-lon'));
-        if (isNaN(lat) || isNaN(lon)) return;
-
-        var langName = $.trim($row.find('td').eq(0).text());
-        var key, label;
-
-        if (activeFilters.length) {
-          var keyParts = [];
-          var labelParts = [];
-          for (var j = 0; j < activeFilters.length; j++) {
-            var f = activeFilters[j];
-            var $cell = $row.find('td.feature-cell[data-param-id="' + f.paramId + '"]');
-            var val = $.trim($cell.text()) || 'n/a';
-            keyParts.push(f.paramId + ':' + val);
-            labelParts.push((f.paramName || 'Feature') + ' = ' + val);
+          if (!langAny && selectedLangIds.length) {
+            if ($.inArray(rowLangId, selectedLangIds) === -1) visible = false;
           }
-          key = keyParts.join('|');
-          label = labelParts.join(', ');
-        } else {
-          key = '__all__';
-          label = 'All languages (current filters)';
+
+          if (visible && featureFilters.length) {
+            for (var i = 0; i < featureFilters.length; i++) {
+              var f = featureFilters[i];
+              var $cell = $row.find('td.feature-cell[data-param-id="' + f.paramId + '"]');
+              var cellVal = norm($cell.text());
+              var wantVal = norm(f.value);
+
+              if (!cellVal || cellVal !== wantVal) {
+                visible = false;
+                break;
+              }
+            }
+          }
+
+          markRowFiltered($row, !visible);
+        });
+
+        updateColumnVisibility();
+
+        if ($('#agreement-map-view').is(':visible') && agreementMap) {
+          updateMapFromTable();
         }
+      }
 
-        if (!categoriesByKey[key]) {
-          var idx = categories.length;
-          var style = getCategoryStyle(idx);
-          categoriesByKey[key] = { key: key, label: label, count: 0, style: style };
-          categories.push(categoriesByKey[key]);
-        }
+      $(document).on('change', '.feature-filter', applyAllFilters);
 
-        var cat = categoriesByKey[key];
-        cat.count++;
-
-        var icon = makeIconForStyle(cat.style);
-        if (!icon) return;
-
-        var popup = '<strong>' + escapeHtml(langName) + '</strong>';
-        if (label) popup += '<br/>' + escapeHtml(label);
-
-        var marker = L.marker([lat, lon], {icon: icon}).bindPopup(popup);
-        agreementMapLayer.addLayer(marker);
+      // Buttons
+      $(document).on('click', '#toggle-macro-columns', function (e) {
+        e.preventDefault();
+        showMacroColumns = !showMacroColumns;
+        updateColumnVisibility();
       });
 
-      if (agreementMapLayer.getLayers().length) {
-        try {
-          agreementMap.fitBounds(agreementMapLayer.getBounds().pad(0.1));
-        } catch (e) {}
+      $(document).on('click', '#toggle-all-agreement', function (e) {
+        e.preventDefault();
+        showAllAgreementColumns = !showAllAgreementColumns;
+        updateColumnVisibility();
+      });
+
+      $(document).on('click', '#show-full-table', function (e) {
+        e.preventDefault();
+
+        $('.feature-filter').val('');
+        $('.family-checkbox, .branch-checkbox, .language-checkbox').prop('checked', false);
+        $('#lang-any').prop('checked', true);
+        $('#lang-tree-search').val('');
+        $('#lang-tree .lang-node, #lang-tree .language-leaf').show();
+
+        $('#agreement-table tbody tr').removeClass('filtered-out').show();
+
+        showMacroColumns = true;
+        showAllAgreementColumns = true;
+        updateColumnVisibility();
+
+        if ($('#agreement-map-view').is(':visible') && agreementMap) {
+          updateMapFromTable();
+        }
+      });
+
+      // --- Modal: feature info ---
+      $(document).on('click', '.param-info', function (e) {
+        e.preventDefault();
+        var name = $(this).data('param-name');
+        var desc = $(this).data('param-desc') || 'No description available.';
+        $('#feature-modal .modal-header h3').text(name);
+        $('#feature-modal .modal-body').html('<p>' + escapeHtml(desc) + '</p>');
+        $('#feature-modal').modal('show');
+      });
+
+      // --- Modal: examples ---
+      var featureExamplesUrl = "${request.route_url('feature_examples')}";
+
+      $(document).on('click', '#agreement-table td.feature-cell', function () {
+        var value = $.trim($(this).text());
+        if (!value) return;
+
+        var $cell = $(this);
+        var paramId = '' + ($cell.data('param-id') || '');
+        var paramName = $cell.data('param-name');
+        var $row = $cell.closest('tr');
+        var langId = $row.data('lang-id');
+        var langName = $.trim($row.find('td').eq(0).text());
+
+        $('#feature-modal .modal-header h3').text(paramName + ' = ' + value + ' — ' + langName);
+        $('#feature-modal .modal-body').html('<p><em>Loading examples…</em></p>');
+        $('#feature-modal').modal('show');
+
+        $.getJSON(featureExamplesUrl, {lang: langId, param: paramId}, function (data) {
+          if (!data.ok || !data.examples || !data.examples.length) {
+            $('#feature-modal .modal-body').html('<p><em>No examples available for this cell.</em></p>');
+            return;
+          }
+          var html = '';
+          $.each(data.examples, function (i, ex) {
+            html += '<div class="example">';
+
+            var primary = stripOuterQuotes(ex.primary || '');
+            var gloss   = stripOuterQuotes(ex.gloss || '');
+            var trans   = stripOuterQuotes(ex.translation || '');
+
+            if (primary || gloss) {
+              html += '<div class="ig-example">';
+              if (primary) html += '<pre>' + escapeHtml(primary) + '</pre>';
+              if (gloss)   html += '<pre>' + escapeHtml(gloss)   + '</pre>';
+              html += '</div>';
+            }
+
+            if (trans) {
+              html += '<p class="ig-translation">&#8216;' + escapeHtml(trans) + '&#8217;</p>';
+            }
+
+            if (ex.url) {
+              html += '<p><a href="' + ex.url + '">View example page</a></p>';
+            }
+
+            html += '</div>';
+            if (i < data.examples.length - 1) html += '<hr/>';
+          });
+          $('#feature-modal .modal-body').html(html);
+        }).fail(function () {
+          $('#feature-modal .modal-body').html('<p><em>Error loading examples.</em></p>');
+        });
+      });
+
+      // -------- MAP ------------
+      var agreementMap = null;
+      var agreementMapLayer = null;
+      var markerColors = ['#6baed6', '#9ecae1', '#74c476', '#a1d99b', '#fbb4b9', '#fdd0a2', '#bcbddc', '#c7e9c0', '#f2f0f7'];
+      var markerShapes = ['circle', 'square', 'triangle', 'diamond', 'star'];
+      var shapeChars = {circle:'●', square:'■', triangle:'▲', diamond:'◆', star:'★'};
+
+      function getCategoryStyle(index) {
+        var color = markerColors[index % markerColors.length];
+        var shape = markerShapes[Math.floor(index / markerColors.length) % markerShapes.length];
+        return {color: color, shape: shape};
       }
 
-      renderLegend(categories);
-    }
-
-    function ensureMapInitialized() {
-      if (typeof L === 'undefined') {
-        $('#agreement-map').html(
-          '<p class="text-error"><em>Map library (Leaflet) is not available.</em></p>'
-        );
-        return;
+      function makeIconForStyle(style) {
+        if (typeof L === 'undefined') return null;
+        var symbol = shapeChars[style.shape] || '●';
+        var html = '<span class="map-marker-symbol" style="color:' + style.color + ';">' + symbol + '</span>';
+        return L.divIcon({ className: 'agreement-map-marker', html: html, iconSize: [20, 20], iconAnchor: [10, 10] });
       }
 
-      if (!agreementMap) {
-        agreementMap = L.map('agreement-map', {attributionControl: false});
-        agreementMapLayer = L.layerGroup().addTo(agreementMap);
+      function renderLegend(categories) {
+        var $legend = $('#agreement-map-legend');
+        if (!categories.length) {
+          $legend.html('<p class="muted"><em>No languages to show on the map for the current filters.</em></p>');
+          return;
+        }
+        var total = 0;
+        $.each(categories, function (i, cat) { total += cat.count; });
 
-        L.tileLayer(
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-          {maxZoom: 16}
-        ).addTo(agreementMap);
-
-        L.control.attribution({
-          position: 'bottomright',
-          prefix: ''
-        }).addTo(agreementMap).addAttribution(
-          'Tiles © Esri — Esri, DeLorme, NAVTEQ'
-        );
-
-        agreementMap.setView([20, 0], 2);
+        var html = '<strong>Legend</strong> <span class="muted">(languages on map: ' + total + ')</span><ul class="unstyled">';
+        $.each(categories, function (i, cat) {
+          var symbol = shapeChars[cat.style.shape] || '●';
+          html += '<li class="legend-item">' +
+                  '<span class="legend-symbol" style="color:' + cat.style.color + ';">' + symbol + '</span>' +
+                  escapeHtml(cat.label || 'All languages') + ' — ' +
+                  '<span class="badge">' + cat.count + '</span>' +
+                  '</li>';
+        });
+        html += '</ul>';
+        $legend.html(html);
       }
 
-      setTimeout(function () {
-        agreementMap.invalidateSize();
-        updateMapFromTable();
-      }, 0);
-    }
-
-    $('#map-include-other-values').on('change', function () {
-      if ($('#agreement-map-view').is(':visible') && agreementMap) {
-        updateMapFromTable();
+      function rowsForMap() {
+        var useAllRows = $('#map-include-other-values').is(':checked');
+        var $rows = $('#agreement-table tbody tr');
+        if (useAllRows) return $rows;
+        return $rows.filter(function () { return !$(this).hasClass('filtered-out'); });
       }
+
+      function updateMapFromTable() {
+        if (!agreementMap || !agreementMapLayer) return;
+
+        agreementMapLayer.clearLayers();
+        var activeFilters = getActiveFeatureFilters();
+        var categoriesByKey = {};
+        var categories = [];
+
+        rowsForMap().each(function () {
+          var $row = $(this);
+
+          var lat = parseFloat($row.attr('data-lat'));
+          var lon = parseFloat($row.attr('data-lon'));
+          if (isNaN(lat) || isNaN(lon)) return;
+
+          var langName = $.trim($row.find('td').eq(0).text());
+          var key, label;
+
+          if (activeFilters.length) {
+            var keyParts = [];
+            var labelParts = [];
+            for (var j = 0; j < activeFilters.length; j++) {
+              var f = activeFilters[j];
+              var $cell = $row.find('td.feature-cell[data-param-id="' + f.paramId + '"]');
+              var val = norm($cell.text()) || 'n/a';
+              keyParts.push(f.paramId + ':' + val);
+              labelParts.push((f.paramName || 'Feature') + ' = ' + val);
+            }
+            key = keyParts.join('|');
+            label = labelParts.join(', ');
+          } else {
+            key = '__all__';
+            label = 'All languages (current filters)';
+          }
+
+          if (!categoriesByKey[key]) {
+            var idx = categories.length;
+            categoriesByKey[key] = { key: key, label: label, count: 0, style: getCategoryStyle(idx) };
+            categories.push(categoriesByKey[key]);
+          }
+
+          var cat = categoriesByKey[key];
+          cat.count++;
+
+          var icon = makeIconForStyle(cat.style);
+          if (!icon) return;
+
+          var popup = '<strong>' + escapeHtml(langName) + '</strong>';
+          if (label) popup += '<br/>' + escapeHtml(label);
+
+          agreementMapLayer.addLayer(L.marker([lat, lon], {icon: icon}).bindPopup(popup));
+        });
+
+        if (agreementMapLayer.getLayers().length) {
+          try { agreementMap.fitBounds(agreementMapLayer.getBounds().pad(0.1)); } catch (e) {}
+        }
+
+        renderLegend(categories);
+      }
+
+      function ensureMapInitialized() {
+        if (typeof L === 'undefined') {
+          $('#agreement-map').html('<p class="text-error"><em>Map library (Leaflet) is not available.</em></p>');
+          return;
+        }
+
+        if (!agreementMap) {
+          agreementMap = L.map('agreement-map', {attributionControl: false});
+          agreementMapLayer = L.layerGroup().addTo(agreementMap);
+
+          L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            {maxZoom: 16}
+          ).addTo(agreementMap);
+
+          L.control.attribution({ position: 'bottomright', prefix: '' })
+            .addTo(agreementMap)
+            .addAttribution('Tiles © Esri — Esri, DeLorme, NAVTEQ');
+
+          agreementMap.setView([20, 0], 2);
+        }
+      }
+
+      $(document).on('change', '#map-include-other-values', function () {
+        if ($('#agreement-map-view').is(':visible') && agreementMap) updateMapFromTable();
+      });
+
+      // initial
+      syncAnyCheckbox();
+      updateColumnVisibility();
+      applyAllFilters();
     });
+  }
 
-    // первоначальное состояние
-    applyAllFilters();
-  });
+  bootWhenJQueryReady();
+})();
 </script>
-

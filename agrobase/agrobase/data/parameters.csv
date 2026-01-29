@@ -12,8 +12,8 @@ agr_acc,Agreement with ACC,Agreement with accusative?,agreement,pred_agreement
 agr_oblique,Agreement with oblique,Agreement with oblique arguments?,agreement,pred_agreement
 agr_defective_obl,Defective intervention of oblique?,Oblique triggers defective intervention?,agreement,pred_agreement
 agr_finite,Agreement on finite verb,Agreement morphology on finite verbs?,agreement,pred_agreement
-agr_nonfinite,Agreement on non-finite verb,Agreement morphology on non-finite verbs?,agreement,
-agr_compl,Agreement on complementizer,Agreement morphology on complementizers?,agreement,
+agr_nonfinite,Agreement on non-finite verb,Agreement morphology on non-finite verbs?,agreement,pred_agreement
+agr_compl,Agreement on complementizer,Agreement morphology on complementizers?,agreement,pred_agreement
 branching,Branching,Basic syntactic branching type,language-metadata,
 word_order_basic,Basic word order,Basic clausal word order,language-metadata,
 word_order_nadj,NAdj word order,Relative order of noun and adjective,language-metadata,

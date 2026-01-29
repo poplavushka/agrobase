@@ -26,10 +26,11 @@ def load_sources(data: Data):
         src = bibtex2source(rec)
         data.add(common.Source, src.id, _obj=src)
 
+
 def load_languages(data: Data):
     """
     Загрузка языков из languages.csv в common.Language.
-    glottocode и genetic кладём в jsondata.
+    glottocode и genetic_* кладём в jsondata.
     """
     path = DATA_DIR / "languages.csv"
     with path.open(encoding="utf-8") as fp:
@@ -39,14 +40,26 @@ def load_languages(data: Data):
                 row["ID"],
                 id=row["ID"],
                 name=row["Name"],
-                latitude=float(row["Latitude"]) if row["Latitude"] else None,
-                longitude=float(row["Longitude"]) if row["Longitude"] else None,
+                latitude=float(row["Latitude"]) if row.get("Latitude") else None,
+                longitude=float(row["Longitude"]) if row.get("Longitude") else None,
             )
+
             jd = {}
-            if row.get("Glottocode"):
-                jd["glottocode"] = row["Glottocode"]
-            if row.get("Genetic"):
-                jd["genetic"] = row["Genetic"]
+
+            glottocode = (row.get("Glottocode") or "").strip()
+            if glottocode:
+                jd["glottocode"] = glottocode
+
+            fam = (row.get("Genetic/Family") or row.get("Genetic") or "").strip()
+            br  = (row.get("Genetic/Branch") or "").strip()
+
+            if fam:
+                jd["genetic_family"] = fam
+                jd["genetic"] = fam  # alias для старого кода (если где-то ещё используется)
+
+            if br:
+                jd["genetic_branch"] = br
+
             if jd:
                 lang.jsondata = jd
 

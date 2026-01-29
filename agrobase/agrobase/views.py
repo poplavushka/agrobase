@@ -8,7 +8,7 @@ from agrobase import models
 @view_config(route_name='param_groups', renderer='param_groups.mako')
 def param_groups(req):
     groups = [
-        dict(id='language-metadata', name='Language metadata'),
+        dict(id='language-metadata', name='Macro-parameters'),
         dict(id='agreement', name='Agreement'),
     ]
     return dict(groups=groups, request=req)
@@ -68,16 +68,6 @@ def param_hyper(req):
 
 @view_config(route_name='agreement_table', renderer='agreement_table.mako')
 def agreement_table_view(req):
-    """
-    Agreement & metadata table:
-      - одна HTML-таблица (без clld-datatables),
-      - DataTables по DOM,
-      - иерархические фильтры для agreement-фич.
-    """
-    # какие группы признаков показывать как колонки
-    show_meta = (req.params.get('show_meta', '1') == '1')
-    show_agr = (req.params.get('show_agr', '1') == '1')
-
     # языки
     languages = (
         DBSession.query(common.Language)
@@ -92,23 +82,21 @@ def agreement_table_view(req):
         .all()
     )
 
-    # metadata-параметры
     meta_params = [
         p for p in all_params
         if (p.jsondata or {}).get('group') == 'language-metadata'
     ]
 
-    # все agreement-параметры
     agr_params_all = [
         p for p in all_params
         if (p.jsondata or {}).get('group') == 'agreement'
     ]
 
-    # гиперпараметры (без parent) и дочерние (parent = id гиперпараметра)
     agr_hyperparams = [
         p for p in agr_params_all
         if not (p.jsondata or {}).get('parent')
     ]
+
     agr_children_map = {}
     for hp in agr_hyperparams:
         agr_children_map[hp.id] = [
@@ -116,16 +104,11 @@ def agreement_table_view(req):
             if (p.jsondata or {}).get('parent') == hp.id
         ]
 
-    # в колонках таблицы всё равно показываем ВСЕ agreement-параметры
     agr_params = agr_params_all
 
     # значения признаков: (lang_pk, param_pk) -> строка
     value_map = {}
-    relevant_params = []
-    if show_meta:
-        relevant_params.extend(meta_params)
-    if show_agr:
-        relevant_params.extend(agr_params)
+    relevant_params = list(meta_params) + list(agr_params)
     relevant_pks = {p.pk for p in relevant_params}
 
     if languages and relevant_pks:
@@ -145,19 +128,6 @@ def agreement_table_view(req):
                     vals.append(v.name)
             value_map[(vs.language_pk, vs.parameter_pk)] = ', '.join(vals)
 
-    # сопоставление параметр -> индекс колонки в таблице
-    # 0: Language, 1: Genetic, дальше параметры
-    col_index_by_pk = {}
-    col_idx = 2
-    if show_meta:
-        for p in meta_params:
-            col_index_by_pk[p.pk] = col_idx
-            col_idx += 1
-    if show_agr:
-        for p in agr_params:
-            col_index_by_pk[p.pk] = col_idx
-            col_idx += 1
-
     return dict(
         request=req,
         languages=languages,
@@ -165,11 +135,9 @@ def agreement_table_view(req):
         agr_params=agr_params,
         agr_hyperparams=agr_hyperparams,
         agr_children_map=agr_children_map,
-        col_index_by_pk=col_index_by_pk,
-        show_meta=show_meta,
-        show_agr=show_agr,
         value_map=value_map,
     )
+
 
 @view_config(route_name='feature_examples', renderer='json')
 def feature_examples(req):
