@@ -75,7 +75,7 @@ def agreement_table_view(req):
       - иерархические фильтры для agreement-фич.
     """
     # какие группы признаков показывать как колонки
-    show_meta = (req.params.get('show_meta', '1') == '1')
+    show_meta = (req.params.get('show_meta', '0') == '1')
     show_agr = (req.params.get('show_agr', '1') == '1')
 
     # языки
@@ -281,5 +281,4 @@ def feature_combinations_view(req):
         languages=languages,
         map_=map_,
     )
-
 

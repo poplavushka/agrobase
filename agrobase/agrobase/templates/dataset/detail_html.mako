@@ -8,8 +8,19 @@
 
 <p class="lead">
     A database of Agreement Features.
-    Explore agreement features via the Agreement table. If you have any suggestions,
-    please write us via the Feedback link in the menu.
+    Explore agreement features in
+    <a href="${request.route_url('agreement_table')}">Features</a>.
+</p>
+
+<p class="lead">
+  Learn about different languages in our database in
+  <a href="${request.route_url('languages')}">Languages</a>.
+  Learn about agreement parameters in
+  <a href="${request.route_url('parameters')}">Parameters</a>.
+  If you have any suggestions, please use
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSftKiyTOWGrU0nksOCpqdvbv7SoW_11VQUe8OPMk-NVVEQpsw/viewform"
+     target="_blank"
+     rel="noopener noreferrer">Feedback form</a>.
 </p>
 
 <div id="home-language-map-wrapper" class="home-language-map-wrapper">
@@ -49,12 +60,7 @@
     // Шаблон URL для страницы языка: /language/<id>
     var languageUrlTemplate = "${request.route_url('language', id='__ID__')}";
 
-    // Кандидаты на URL GeoJSON со всеми языками
-    var geojsonCandidates = [
-      "${request.route_url('languages')}?_format=geojson",
-      "${request.route_url('languages')}?format=geojson",
-      "${request.route_url('languages')}.geojson"
-    ];
+    var geojsonCandidates = ["${request.route_url('languages')}.geojson"];
 
     function drawLanguages(data) {
       var $count = $('#home-language-map-count');

@@ -4,9 +4,17 @@
 
 <h1>Agreement features</h1>
 
-<p class="lead">
-    Use the filters below to select languages with particular agreement profiles.
-</p>
+<details class="agreement-help" open="open">
+  <summary>How to use this page</summary>
+  <p class="lead" style="margin-bottom: 0;">
+    Use the filters below to find languages with particular agreement profiles. Results appear in the table or in Map view.
+    You can also filter the table by language or by family in <strong>Filter by languages &amp; families</strong>.
+    To include language macroparameters, turn on <strong>Show language metadata</strong> and click <strong>Update</strong>.
+    To reset all filters and restore the full table, click <strong>Show full table</strong>.
+    Click a feature value to open examples when they are available, and click a language name to open its page.
+    If you move the cursor to the right side of a column header, you can hide that column when needed.
+  </p>
+</details>
 
 <!-- Переключатель вида результата: таблица / карта -->
 <div id="agreement-view-toggle" class="btn-toolbar" style="margin-bottom: 1em;">
@@ -25,7 +33,7 @@
 </div>
 
 <!-- чекбоксы: какие группы признаков показывать как колонки -->
-<form class="form-inline" method="get" style="margin-bottom: 1em;">
+<form id="agreement-options-form" class="form-inline" method="get" style="margin-bottom: 1em;">
   <label class="checkbox inline">
     <input type="hidden" name="show_meta" value="0"/>
     <input type="checkbox" name="show_meta" value="1"
@@ -42,6 +50,14 @@
 
   <button type="submit" class="btn" style="margin-left: 1em;">
     Update
+  </button>
+
+  <span style="margin-left: 0.75em;">
+    Reset all filters and show all columns:
+  </span>
+
+  <button id="show-full-table" type="button" class="btn" style="margin-left: 0.5em;">
+    Show full table
   </button>
 </form>
 
@@ -73,69 +89,70 @@
     Choose values for any subset of features. Columns with <strong>Any</strong> are ignored.
   </p>
 
-  <!-- 1. Agreement features – всегда видны -->
+  <!-- 1. Agreement features -->
   % if show_agr and agr_hyperparams:
-    <fieldset class="filter-section">
-      <legend class="filter-section-title">Agreement features</legend>
-
-      % for hp in agr_hyperparams:
-        <details class="feature-group">
-          <summary class="feature-group-summary">
-            <span class="param-info"
-                  data-param-name="${hp.name}"
-                  data-param-desc="${hp.description or ''}">
-              ${hp.name}
-            </span>
-          </summary>
-
-          <% col_hp = param_col_index.get(hp.pk) %>
-          % if col_hp is not None:
-            <label style="display: block; margin: 4px 0;">
+    <details class="filter-section" id="macroparameters-block">
+      <summary class="filter-summary">Agreement macroparameters</summary>
+      <fieldset style="margin-top: 0.5em;">
+        % for hp in agr_hyperparams:
+          <details class="feature-group">
+            <summary class="feature-group-summary">
               <span class="param-info"
                     data-param-name="${hp.name}"
                     data-param-desc="${hp.description or ''}">
                 ${hp.name}
-              </span>:
-              <select class="feature-filter input-small"
-                      data-column="${col_hp}"
-                      data-param-id="${hp.id}"
-                      data-param-name="${hp.name}">
-                <option value="">Any</option>
-                % if hp.domain:
-                  % for de in hp.domain:
-                    <option value="${de.name}">${de.name}</option>
-                  % endfor
-                % endif
-              </select>
-            </label>
-          % endif
+              </span>
+            </summary>
 
-          % for p in agr_children_map.get(hp.id, []):
-            <% col_index = param_col_index.get(p.pk) %>
-            % if col_index is not None:
-              <label style="display: block; margin: 4px 0 4px 1.5em;">
+            <% col_hp = param_col_index.get(hp.pk) %>
+            % if col_hp is not None:
+              <label style="display: block; margin: 4px 0;">
                 <span class="param-info"
-                      data-param-name="${p.name}"
-                      data-param-desc="${p.description or ''}">
-                  ${p.name}
+                      data-param-name="${hp.name}"
+                      data-param-desc="${hp.description or ''}">
+                  ${hp.name}
                 </span>:
                 <select class="feature-filter input-small"
-                        data-column="${col_index}"
-                        data-param-id="${p.id}"
-                        data-param-name="${p.name}">
+                        data-column="${col_hp}"
+                        data-param-id="${hp.id}"
+                        data-param-name="${hp.name}">
                   <option value="">Any</option>
-                  % if p.domain:
-                    % for de in p.domain:
+                  % if hp.domain:
+                    % for de in hp.domain:
                       <option value="${de.name}">${de.name}</option>
                     % endfor
                   % endif
                 </select>
               </label>
             % endif
-          % endfor
-        </details>
-      % endfor
-    </fieldset>
+
+            % for p in agr_children_map.get(hp.id, []):
+              <% col_index = param_col_index.get(p.pk) %>
+              % if col_index is not None:
+                <label style="display: block; margin: 4px 0 4px 1.5em;">
+                  <span class="param-info"
+                        data-param-name="${p.name}"
+                        data-param-desc="${p.description or ''}">
+                    ${p.name}
+                  </span>:
+                  <select class="feature-filter input-small"
+                          data-column="${col_index}"
+                          data-param-id="${p.id}"
+                          data-param-name="${p.name}">
+                    <option value="">Any</option>
+                    % if p.domain:
+                      % for de in p.domain:
+                        <option value="${de.name}">${de.name}</option>
+                      % endfor
+                    % endif
+                  </select>
+                </label>
+              % endif
+            % endfor
+          </details>
+        % endfor
+      </fieldset>
+    </details>
   % else:
     <p class="muted">
       Turn on <strong>Show agreement features</strong> above to filter by them.
@@ -208,15 +225,15 @@
     </fieldset>
   </details>
 
-  <!-- 3. Metadata – отдельный блок -->
-  % if show_meta and meta_params:
-    <details class="filter-section filter-section-secondary">
-      <summary class="filter-summary">
-        Filter by language metadata
-      </summary>
+  <!-- 3. Metadata – отдельный блок под languages/families -->
+  <details class="filter-section filter-section-secondary">
+    <summary class="filter-summary">
+      Filter by language macroparameters
+    </summary>
 
-      <fieldset style="margin-top: 0.5em;">
-        <legend class="filter-section-subtitle">Language metadata</legend>
+    <fieldset style="margin-top: 0.5em;">
+      <legend class="filter-section-subtitle">Language metadata</legend>
+      % if show_meta and meta_params:
         % for p in meta_params:
           <% col_index = param_col_index.get(p.pk) %>
           % if col_index is not None:
@@ -240,19 +257,14 @@
             </label>
           % endif
         % endfor
-      </fieldset>
-    </details>
-  % endif
-</div>
+      % else:
+        <p class="muted" style="margin: 0;">
+          Turn on <strong>Show language metadata</strong> above to filter by metadata.
+        </p>
+      % endif
+    </fieldset>
+  </details>
 
-<!-- Кнопка "Show full table" и подпись выносим ПОД серый блок -->
-<div id="agreement-filter-actions" class="filter-actions clearfix">
-  <button id="show-full-table" class="btn btn-small pull-right">
-    Show full table
-  </button>
-  <span class="help-block" style="margin-right: 6em;">
-    Reset all filters and show all columns.
-  </span>
 </div>
 
 <!-- ВИД 1: таблица -->
@@ -265,12 +277,56 @@
           <th>Genetic</th>
           % if show_meta:
             % for p in meta_params:
-              <th>${p.name}</th>
+              <th data-column-index="${param_col_index.get(p.pk)}">
+                <div class="feature-header-wrap">
+                  <span class="param-info feature-header-info"
+                        data-param-name="${p.name}"
+                        data-param-desc="${p.description or ''}">
+                    ${p.name}
+                  </span>
+                  <button type="button"
+                          class="column-hide-trigger"
+                          data-column-index="${param_col_index.get(p.pk)}"
+                          title="Hide this column"
+                          aria-label="Hide this column">
+                    &#8250;
+                  </button>
+                  <button type="button"
+                          class="column-restore-trigger"
+                          data-column-index="${param_col_index.get(p.pk)}"
+                          title="Show this column"
+                          aria-label="Show this column">
+                    &#8249;
+                  </button>
+                </div>
+              </th>
             % endfor
           % endif
           % if show_agr:
             % for p in agr_params:
-              <th>${p.name}</th>
+              <th data-column-index="${param_col_index.get(p.pk)}">
+                <div class="feature-header-wrap">
+                  <span class="param-info feature-header-info"
+                        data-param-name="${p.name}"
+                        data-param-desc="${p.description or ''}">
+                    ${p.name}
+                  </span>
+                  <button type="button"
+                          class="column-hide-trigger"
+                          data-column-index="${param_col_index.get(p.pk)}"
+                          title="Hide this column"
+                          aria-label="Hide this column">
+                    &#8250;
+                  </button>
+                  <button type="button"
+                          class="column-restore-trigger"
+                          data-column-index="${param_col_index.get(p.pk)}"
+                          title="Show this column"
+                          aria-label="Show this column">
+                    &#8249;
+                  </button>
+                </div>
+              </th>
             % endfor
           % endif
         </tr>
@@ -295,20 +351,50 @@
 
           % if show_meta:
             % for p in meta_params:
-              <td class="feature-cell"
+              <%
+                raw_value = (value_map.get((lang.pk, p.pk), '') or '').strip()
+                value_norm = raw_value.lower()
+                display_value = raw_value
+                cell_kind = 'feature-neutral'
+                if value_norm in ('yes', 'y', 'true', '1', '+'):
+                    display_value = '+'
+                    cell_kind = 'feature-yes'
+                elif value_norm in ('no', 'n', 'false', '0', '-'):
+                    display_value = '-'
+                    cell_kind = 'feature-no'
+                elif not raw_value:
+                    cell_kind = 'feature-empty'
+              %>
+              <td class="feature-cell ${cell_kind}"
                   data-param-id="${p.id}"
-                  data-param-name="${p.name}">
-                ${value_map.get((lang.pk, p.pk), '')}
+                  data-param-name="${p.name}"
+                  data-raw-value="${raw_value}">
+                <span class="feature-display">${display_value}</span>
               </td>
             % endfor
           % endif
 
           % if show_agr:
             % for p in agr_params:
-              <td class="feature-cell"
+              <%
+                raw_value = (value_map.get((lang.pk, p.pk), '') or '').strip()
+                value_norm = raw_value.lower()
+                display_value = raw_value
+                cell_kind = 'feature-neutral'
+                if value_norm in ('yes', 'y', 'true', '1', '+'):
+                    display_value = '+'
+                    cell_kind = 'feature-yes'
+                elif value_norm in ('no', 'n', 'false', '0', '-'):
+                    display_value = '-'
+                    cell_kind = 'feature-no'
+                elif not raw_value:
+                    cell_kind = 'feature-empty'
+              %>
+              <td class="feature-cell ${cell_kind}"
                   data-param-id="${p.id}"
-                  data-param-name="${p.name}">
-                ${value_map.get((lang.pk, p.pk), '')}
+                  data-param-name="${p.name}"
+                  data-raw-value="${raw_value}">
+                <span class="feature-display">${display_value}</span>
               </td>
             % endfor
           % endif
@@ -367,6 +453,19 @@
   #agreement-filter-panel {
     margin-bottom: 1em;
   }
+  .agreement-help {
+    margin: 0 0 1em;
+    padding: 0.85em 1em;
+    background: #f8fafc;
+    border: 1px solid #dde6ee;
+    border-radius: 6px;
+  }
+  .agreement-help > summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #2f3d4d;
+    margin-bottom: 0.5em;
+  }
   #agreement-filter-panel fieldset {
     border: none;
     padding: 0;
@@ -402,6 +501,9 @@
       overflow-x: auto;
       padding-top: 0.5em;
       border-top: 1px solid #eee;
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
     }
 
     /* НЕ фиксируем ширину таблицы, чтобы первые колонки не сжимались до нуля */
@@ -412,8 +514,8 @@
 
     #agreement-table th,
     #agreement-table td {
-      font-size: 11px;
-      padding: 3px 4px;
+      font-size: 13px;
+      padding: 6px 8px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -423,18 +525,89 @@
       white-space: normal;
       word-wrap: break-word;   /* заголовки могут быть многострочными */
     }
+    #agreement-table th[data-column-index] {
+      position: relative;
+    }
+    #agreement-table .feature-header-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    #agreement-table .column-hide-trigger {
+      display: inline-block;
+      opacity: 0;
+      padding: 0 5px;
+      border: 0;
+      background: transparent;
+      color: #7a8794;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    #agreement-table .column-restore-trigger {
+      display: none;
+      padding: 0 4px;
+      border: 0;
+      background: transparent;
+      color: #0492C2;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+    #agreement-table th[data-column-index]:hover .column-hide-trigger,
+    #agreement-table .column-hide-trigger:focus {
+      opacity: 1;
+    }
+    #agreement-table .column-hide-trigger:hover {
+      color: #0492C2;
+    }
+    #agreement-table .column-collapsed {
+      width: 16px;
+      min-width: 16px !important;
+      max-width: 16px !important;
+      padding: 0 !important;
+      overflow: hidden;
+      text-overflow: clip;
+      background-image: linear-gradient(
+        90deg,
+        rgba(45, 95, 159, 0.18) 0,
+        rgba(45, 95, 159, 0.18) 50%,
+        rgba(45, 95, 159, 0.05) 50%,
+        rgba(45, 95, 159, 0.05) 100%
+      );
+      background-size: 6px 100%;
+      background-repeat: repeat-y;
+    }
+    #agreement-table th.column-collapsed {
+      background-color: #eef4fb;
+      text-align: center;
+      vertical-align: middle;
+    }
+    #agreement-table th.column-collapsed .feature-header-info,
+    #agreement-table th.column-collapsed .column-hide-trigger {
+      display: none;
+    }
+    #agreement-table th.column-collapsed .column-restore-trigger {
+      display: inline-block;
+    }
+    #agreement-table td.column-collapsed .feature-display {
+      visibility: hidden;
+    }
 
 /* Language и Genetic делаем пошире и не даём их съесть */
 #agreement-table th:nth-child(-n+2),
 #agreement-table td:nth-child(-n+2) {
-min-width: 140px;
+min-width: 190px;
     white-space: normal;
 }
 
 /* для всех остальных колонок только ограничиваем максимум */
 #agreement-table th:nth-child(n+3),
 #agreement-table td:nth-child(n+3) {
-  max-width: 90px;
+  max-width: 120px;
 }
 
 
@@ -444,7 +617,7 @@ min-width: 140px;
     color: #444;
   }
   .param-info:hover {
-    color: #0056b3;
+    color: #0492C2;
   }
 
   #agreement-table td.feature-cell {
@@ -455,7 +628,34 @@ min-width: 140px;
   }
 
   #agreement-table td.feature-cell:hover {
-    background-color: #fff8dc !important;
+    background-color: rgba(78, 140, 212, 0.16) !important;
+  }
+
+  #agreement-table td.feature-cell.feature-yes {
+    background-color: #e9f7ef;
+    color: #32612D;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  #agreement-table td.feature-cell.feature-no {
+    background-color: #fdecec;
+    color: #CA3433;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  #agreement-table td.feature-cell.feature-empty {
+    background-color: #f8f8f8;
+    color: #bbb;
+  }
+
+  #agreement-table td.feature-cell .feature-display {
+    display: inline-block;
+    min-width: 1.2em;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
   }
 
   .agreement-map-marker .map-marker-symbol {
@@ -563,6 +763,12 @@ min-width: 140px;
     background-color: #447fc3;
     border-color: #386fae;
   }
+
+  #agreement-options-form input[type="checkbox"],
+  #agreement-filter-panel input[type="checkbox"],
+  #agreement-map-view input[type="checkbox"] {
+    accent-color: #4e8cd4;
+  }
 </style>
 
 <script type="text/javascript">
@@ -590,6 +796,110 @@ min-width: 140px;
       }
       return text;
     }
+
+    function setCheckboxGroupState(selector, anyValue) {
+      var $boxes = $(selector);
+      var $any = $boxes.filter('[value="' + anyValue + '"]');
+      var $specific = $boxes.not($any);
+      var anyChecked = $any.is(':checked');
+      var specificChecked = $specific.filter(':checked').length;
+
+      if (anyChecked && specificChecked) {
+        $any.prop('checked', false);
+      }
+      if (!anyChecked && !specificChecked) {
+        $any.prop('checked', true);
+      }
+    }
+
+    function setColumnVisibility(columnIndex, visible) {
+      $('#agreement-table tr').each(function () {
+        var $cell = $(this).children().eq(columnIndex);
+        if (visible) {
+          $cell.removeClass('column-collapsed').attr('data-column-collapsed', '0');
+        } else {
+          $cell.addClass('column-collapsed').attr('data-column-collapsed', '1');
+        }
+      });
+    }
+
+    function showAllColumns() {
+      $('#agreement-table th[data-column-index]').each(function () {
+        setColumnVisibility(parseInt($(this).data('column-index'), 10), true);
+      });
+    }
+
+    function clearPersistedStateInputs() {
+      $('#agreement-options-form input.agreement-state').remove();
+    }
+
+    function appendStateInput(name, value) {
+      $('<input>')
+        .attr({type: 'hidden', name: name})
+        .addClass('agreement-state')
+        .val(value)
+        .appendTo('#agreement-options-form');
+    }
+
+    function persistCurrentState() {
+      clearPersistedStateInputs();
+
+      $('.feature-filter').each(function () {
+        var val = $(this).val();
+        var paramId = $(this).data('param-id');
+        if (val && paramId) {
+          appendStateInput('filter_' + paramId, val);
+        }
+      });
+
+      $('.language-checkbox:checked').each(function () {
+        var val = $(this).val();
+        if (val) appendStateInput('lang_filter', val);
+      });
+
+      $('.genetic-checkbox:checked').each(function () {
+        var val = $(this).val();
+        if (val) appendStateInput('gen_filter', val);
+      });
+    }
+
+    function restoreStateFromQuery() {
+      var params = new URLSearchParams(window.location.search);
+
+      $('.feature-filter').each(function () {
+        var key = 'filter_' + ($(this).data('param-id') || '');
+        if (params.has(key)) {
+          $(this).val(params.get(key));
+        }
+      });
+
+      var langs = params.getAll('lang_filter');
+      if (langs.length) {
+        $('.language-checkbox').prop('checked', false);
+        $.each(langs, function (_, val) {
+          $('.language-checkbox').filter(function () {
+            return $(this).val() === val;
+          }).prop('checked', true);
+        });
+      }
+
+      var gens = params.getAll('gen_filter');
+      if (gens.length) {
+        $('.genetic-checkbox').prop('checked', false);
+        $.each(gens, function (_, val) {
+          $('.genetic-checkbox').filter(function () {
+            return $(this).val() === val;
+          }).prop('checked', true);
+        });
+      }
+
+      setCheckboxGroupState('.language-checkbox', '');
+      setCheckboxGroupState('.genetic-checkbox', '');
+    }
+
+    // Таблица — сразу под переключателем Table/Map.
+    $('#agreement-view-toggle').after($('#agreement-table-view'));
+    $('#agreement-table-view').after($('#agreement-map-view'));
 
     // --- Переключатель Table / Map -----------------------------------------
     $('#agreement-view-toggle button').on('click', function () {
@@ -674,7 +984,7 @@ min-width: 140px;
           for (var i = 0; i < featureFilters.length; i++) {
             var f = featureFilters[i];
             var $cell = $row.find('td.feature-cell[data-param-id="' + f.paramId + '"]');
-            var cellVal = $.trim($cell.text());
+            var cellVal = $.trim($cell.attr('data-raw-value') || $cell.text());
             if (!cellVal || cellVal !== f.value) {
               visible = false;
               break;
@@ -683,8 +993,10 @@ min-width: 140px;
         }
 
         if (visible) {
+          $row.addClass('is-filtered-in').removeClass('is-filtered-out');
           $row.show();
         } else {
+          $row.addClass('is-filtered-out').removeClass('is-filtered-in');
           $row.hide();
         }
       });
@@ -696,8 +1008,37 @@ min-width: 140px;
 
     // --- Обработчики фильтров ----------------------------------------------
     $('.feature-filter').on('change', applyAllFilters);
-    $('.language-checkbox').on('change', applyAllFilters);
-    $('.genetic-checkbox').on('change', applyAllFilters);
+    $('.language-checkbox').on('change', function () {
+      var $box = $(this);
+      if ($box.val() === '' && $box.is(':checked')) {
+        $('.language-checkbox').not($box).prop('checked', false);
+      } else if ($box.val() !== '' && $box.is(':checked')) {
+        $('.language-checkbox[value=""]').prop('checked', false);
+      }
+      setCheckboxGroupState('.language-checkbox', '');
+      applyAllFilters();
+    });
+    $('.genetic-checkbox').on('change', function () {
+      var $box = $(this);
+      if ($box.val() === '' && $box.is(':checked')) {
+        $('.genetic-checkbox').not($box).prop('checked', false);
+      } else if ($box.val() !== '' && $box.is(':checked')) {
+        $('.genetic-checkbox[value=""]').prop('checked', false);
+      }
+      setCheckboxGroupState('.genetic-checkbox', '');
+      applyAllFilters();
+    });
+    $('#agreement-options-form').on('submit', persistCurrentState);
+    $('#agreement-table').on('click', '.column-hide-trigger', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setColumnVisibility(parseInt($(this).data('column-index'), 10), false);
+    });
+    $('#agreement-table').on('click', '.column-restore-trigger', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setColumnVisibility(parseInt($(this).data('column-index'), 10), true);
+    });
 
     $('#language-filter-search').on('keyup', function () {
       var term = $(this).val().toLowerCase();
@@ -739,8 +1080,9 @@ min-width: 140px;
       $('#genetic-filter-search').val('');
       $('#language-checkboxes label.checkbox').show();
       $('#genetic-checkboxes label.checkbox').show();
-
-      $('#agreement-table tbody tr').show();
+      showAllColumns();
+      clearPersistedStateInputs();
+      applyAllFilters();
 
       if ($('#agreement-map-view').is(':visible') && agreementMap) {
         updateMapFromTable();
@@ -761,7 +1103,7 @@ min-width: 140px;
     var featureExamplesUrl = "${request.route_url('feature_examples')}";
 
     $('#agreement-table').on('click', 'td.feature-cell', function () {
-      var value = $.trim($(this).text());
+      var value = $.trim($(this).attr('data-raw-value') || $(this).text());
       if (!value) return;
 
       var $cell = $(this);
@@ -881,7 +1223,7 @@ min-width: 140px;
       if (useAllRows) {
         return $('#agreement-table tbody tr');
       } else {
-        return $('#agreement-table tbody tr:visible');
+        return $('#agreement-table tbody tr.is-filtered-in');
       }
     }
 
@@ -903,6 +1245,7 @@ min-width: 140px;
         if (isNaN(lat) || isNaN(lon)) return;
 
         var langName = $.trim($row.find('td').eq(0).text());
+        var langUrl = $row.find('td').eq(0).find('a').attr('href') || '';
         var key, label;
 
         if (activeFilters.length) {
@@ -911,7 +1254,7 @@ min-width: 140px;
           for (var j = 0; j < activeFilters.length; j++) {
             var f = activeFilters[j];
             var $cell = $row.find('td.feature-cell[data-param-id="' + f.paramId + '"]');
-            var val = $.trim($cell.text()) || 'n/a';
+            var val = $.trim($cell.attr('data-raw-value') || $cell.text()) || 'n/a';
             keyParts.push(f.paramId + ':' + val);
             labelParts.push((f.paramName || 'Feature') + ' = ' + val);
           }
@@ -936,6 +1279,10 @@ min-width: 140px;
         if (!icon) return;
 
         var popup = '<strong>' + escapeHtml(langName) + '</strong>';
+        if (langUrl) {
+          popup = '<strong><a href="' + escapeHtml(langUrl) + '">' +
+            escapeHtml(langName) + '</a></strong>';
+        }
         if (label) popup += '<br/>' + escapeHtml(label);
 
         var marker = L.marker([lat, lon], {icon: icon}).bindPopup(popup);
@@ -944,8 +1291,10 @@ min-width: 140px;
 
       if (agreementMapLayer.getLayers().length) {
         try {
-          agreementMap.fitBounds(agreementMapLayer.getBounds().pad(0.1));
+          agreementMap.fitBounds(agreementMapLayer.getBounds(), {padding: [20, 20]});
         } catch (e) {}
+      } else {
+        agreementMap.setView([20, 0], 2);
       }
 
       renderLegend(categories);
@@ -990,8 +1339,9 @@ min-width: 140px;
       }
     });
 
+    restoreStateFromQuery();
+
     // первоначальное состояние
     applyAllFilters();
   });
 </script>
-

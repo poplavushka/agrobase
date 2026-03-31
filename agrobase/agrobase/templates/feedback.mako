@@ -9,7 +9,7 @@
 </p>
 
 <iframe
-  src="https://docs.google.com/forms/d/ТВОЙ_ID/viewform?embedded=true"
+  src="https://docs.google.com/forms/d/e/1FAIpQLSftKiyTOWGrU0nksOCpqdvbv7SoW_11VQUe8OPMk-NVVEQpsw/viewform?embedded=true"
   width="100%"
   height="900"
   frameborder="0"

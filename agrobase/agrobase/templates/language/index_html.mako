@@ -36,11 +36,7 @@ ${request.get_datatable('languages', h.models.Language).render()}
 
     var palette = ['#6baed6', '#74c476', '#fbb4b9', '#9ecae1', '#a1d99b', '#fdd0a2'];
 
-    var geojsonCandidates = [
-      "${request.route_url('languages')}?_format=geojson",
-      "${request.route_url('languages')}?format=geojson",
-      "${request.route_url('languages')}.geojson"
-    ];
+    var geojsonCandidates = ["${request.route_url('languages')}.geojson"];
 
     var langCount = 0;
 
@@ -80,7 +76,7 @@ ${request.get_datatable('languages', h.models.Language).render()}
 
           var props = feature.properties || {};
           var name = props.name || props.Name || '';
-          var id = props.id || props.pk || '';
+          var id = feature.id || props.id || props.pk || '';
 
           // ссылка на страницу языка
           var url = props.url || "${request.route_url('languages')}/" + encodeURIComponent(id);

@@ -1,8 +1,15 @@
 ID,Language_ID,Parameter_IDs,Primary_Text,Gloss,Translation,Source_ID
-rus_ex1,rus,"agr_subj, agr_finite","""Ja bud-u dovolen/dovol´n-a""","""I be.FUT-1SG satisfied[SG.M]/satisfied-SG.F""","""‘I will be satisfied’ (man/woman talking).""",corbett2010agreement
-dinka_subj,dinka,"pred_agreement, agr_subj, agr_finite, agr_topic","""Àyén à-càm cuî̤in nè̤ pǎal.""","""Ayen 3S-eat.SV food P knife""","""Ayen is eating food with a knife.""",van2015uniform
-dinka_obj,dinka,"pred_agreement, agr_do, agr_finite, agr_topic, case_marking","""Cuî̤in à-cέɛm Áyèn nè̤ pǎal.""","""food 3S-eat.OV Ayen.GEN P knife""","""Food, Ayen is eating with a knife.""",van2015uniform
-dinka_obl,dinka,"pred_agreement, agr_oblique, agr_adjunct, agr_finite, agr_topic, case_marking","""Pǎal à-cέɛmè̤ Áyèn cuî̤in.""","""knife 3S-eat.OBLV Ayen.GEN food""","""With a knife, Ayen is eating food.""",van2015uniform
-dinka_io,dinka,"pred_agreement, agr_io, agr_finite, agr_focus, case_marking","""Yè ŋà cí̤i môc yiε̤̂εn kìtáap?""","""be who PRF.OV man.GEN give.NF book""","""Who has the man given the book to?""",van2015uniform
-dinka_aux,dinka,"pred_agreement, agr_nonfinite, agr_finite, agr_subj","""Ayén à-cé̤ cuî̤in câam nè̤ pǎal.""","""Ayen 3s-PRF.SV food eat.NF P knife""","""Ayen has eaten food with a knife.""",van2015uniform
-dinka_compl,dinka,"agr_compl, case_marking","""Bòl à-gà̤i nàa càm Áyèn cuî̤in""","""Bol 3S-wonder.SV whether eat.SV Ayen.GEN food""","""Bol is wondering whether Ayen is eating food.""",van2015uniform
+rus_ex1,rus,"agr_subj, agr_finite",Ja bud-u dovolen/dovol´n-a,I be.FUT-1SG satisfied[SG.M]/satisfied-SG.F,‘I will be satisfied’ (man/woman talking).,corbett2010agreement
+dinka_subj,dinka,"pred_agreement, agr_subj, agr_finite, agr_topic",Àyén à-càm cuî̤in nè̤ pǎal.,Ayen 3S-eat.SV food P knife,Ayen is eating food with a knife.,van2015uniform
+dinka_obj,dinka,"pred_agreement, agr_do, agr_finite, agr_topic, case_marking",Cuî̤in à-cέɛm Áyèn nè̤ pǎal.,food 3S-eat.OV Ayen.GEN P knife,"Food, Ayen is eating with a knife.",van2015uniform
+dinka_obl,dinka,"pred_agreement, agr_oblique, agr_adjunct, agr_finite, agr_topic, case_marking",Pǎal à-cέɛmè̤ Áyèn cuî̤in.,knife 3S-eat.OBLV Ayen.GEN food,"With a knife, Ayen is eating food.",van2015uniform
+dinka_io,dinka,"pred_agreement, agr_io, agr_finite, agr_focus, case_marking",Yè ŋà cí̤i môc yiε̤̂εn kìtáap?,be who PRF.OV man.GEN give.NF book,Who has the man given the book to?,van2015uniform
+dinka_aux,dinka,"pred_agreement, agr_nonfinite, agr_finite, agr_subj",Ayén à-cé̤ cuî̤in câam nè̤ pǎal.,Ayen 3s-PRF.SV food eat.NF P knife,Ayen has eaten food with a knife.,van2015uniform
+dinka_compl,dinka,"agr_compl, case_marking",Bòl à-gà̤i nàa càm Áyèn cuî̤in,Bol 3S-wonder.SV whether eat.SV Ayen.GEN food,Bol is wondering whether Ayen is eating food.,van2015uniform
+tamil_ex1,tamil,pred_agreement,"avaṉ oru pustakam vāṅk-iṉ-
+āṉ.
+
+","that.man-NOM
+one book-NOM
+buy-P
+ST-3SM",‘He bought a book.’,annamalai_steever

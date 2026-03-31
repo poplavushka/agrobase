@@ -1,11 +1,4 @@
-import collections
-
 from pyramid.config import Configurator
-from clld.interfaces import IMapMarker, IValueSet, IValue, IDomainElement
-from clld.web.icon import MapMarker
-from clldutils.svg import pie, icon, data_url
-
-from agrobase import models
 
 
 def main(global_config, **settings):
@@ -46,7 +39,7 @@ def main(global_config, **settings):
         #)),
 
         ('feedback', lambda ctx, req: (
-            'https://docs.google.com/forms/d/e/1FAIpQLSftKiyTOWGrU0nksOCpqdvbv7SoW_11VQUe8OPMk-NVVEQpsw/viewform?usp=header',
+            'https://docs.google.com/forms/d/e/1FAIpQLSftKiyTOWGrU0nksOCpqdvbv7SoW_11VQUe8OPMk-NVVEQpsw/viewform',
             'Feedback'
         )),
 

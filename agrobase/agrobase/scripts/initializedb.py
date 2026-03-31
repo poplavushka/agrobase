@@ -102,7 +102,11 @@ def load_values(data: Data, contribution: common.Contribution):
     with path.open(encoding="utf-8") as fp:
         reader = csv.DictReader(fp)
         for row in reader:
-            lang = data["Language"][row["Language_ID"]]
+            try:
+                lang = data["Language"][row["Language_ID"]]
+            except KeyError:
+                # Если пример ссылается на язык, отсутствующий в languages.csv.
+                continue
             param = data["Parameter"][row["Parameter_ID"]]
 
             raw_code_id = row.get("Code_ID") or ""        # из CSV, с точками
@@ -173,7 +177,11 @@ def load_examples(data: Data):
     with path.open(encoding="utf-8") as fp:
         reader = csv.DictReader(fp)
         for row in reader:
-            lang = data["Language"][row["Language_ID"]]
+            try:
+                lang = data["Language"][row["Language_ID"]]
+            except KeyError:
+                # Если пример ссылается на язык, отсутствующий в languages.csv.
+                continue
 
             primary = row.get("Primary_Text") or ""
             gloss = row.get("Gloss") or ""
@@ -228,7 +236,7 @@ def main(args):
     # 1. Dataset 
     dataset = common.Dataset(
         id="agrobase",
-        name="Agrobase: Agreement and Language Metadata",
+        name="Agrobase",
         domain="localhost",
         publisher_name="",
         publisher_place="",
