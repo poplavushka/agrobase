@@ -1,31 +1,40 @@
-Contributing
-------------
+# Как участвовать в AGRobase
 
-Install the development environment:
+Начните с [описания проекта и локального запуска](../README.md). Для запуска нужно клонировать AGRobase; отдельно клонировать CLLD не требуется — он устанавливается как зависимость.
 
-```sh
-$ pip install virtualenv  # might require sudo/admin privileges
-$ git clone https://github.com/clld/clld.git  # you may also clone a suitable fork
-$ cd agrobase
-$ python -m virtualenv .venv
-$ source .venv/bin/activate  # Windows: .venv\Scripts\activate.bat
-$ pip install -r requirements.txt  # installs the cloned version with dev-tools in development mode
+## Добавление и исправление данных
+
+Исходные материалы лежат в `agrobase/data/` относительно этой папки. Сохраняйте CSV в UTF-8, не меняйте заголовки колонок и используйте одинаковые идентификаторы во всех файлах.
+
+1. Добавьте язык в `languages.csv`, если его ещё нет.
+2. Для нового признака добавьте параметр в `parameters.csv` и допустимые значения в `codes.csv`.
+3. Добавьте библиографическую запись в `sources.bib`.
+4. Заполните значения языка в `values.csv`. `Language_ID`, `Parameter_ID`, `Code_ID` и `Source_ID` должны ссылаться на соответствующие записи.
+5. При наличии примеров добавьте их в `examples.csv`: исходный текст, глоссы, перевод, параметры и источник.
+
+В `Parameter_IDs` можно указать несколько параметров через запятую; такая CSV-ячейка должна быть заключена в двойные кавычки. Несколько источников в `Source_ID` можно разделять точкой с запятой.
+
+В CSV используются коды вида `agr_subj.yes`. При импорте точка заменяется на подчёркивание, а подпись значения берётся из части после первой точки. Учитывайте это при добавлении кодов.
+
+Перед загрузкой проверьте ссылки вручную: текущий импортёр пропускает некоторые неизвестные идентификаторы без отчёта об ошибках. Пустая ячейка значения на сайте не означает `no`.
+
+После правок сохраните копию рабочей базы и выполните из этой папки:
+
+```bash
+clld initdb development.ini
 ```
 
-Then create a database:
+Команда пересоздаёт базу. Затем проверьте страницу изменённого языка, значения параметров, примеры, источники и результаты фильтров. Убедитесь, что добавление данных не изменило уже существующие записи неожиданным образом.
 
-```sh
-$ su - postgres
-$ createdb agrobase
+## Изменения кода
+
+Для установки инструментов разработки и тестирования в активном виртуальном окружении:
+
+```bash
+python -m pip install -r requirements.txt
+pytest
 ```
 
-and initialize it, either
-- loading a dump of the production DB, using the app's `load_db` task from the
-`appconfig` package
-- or by running `clld initdb development.ini` (may require access to the appropriate data repository).
+Текущие тесты минимальны: проверяют открытие главной страницы и запуск браузерного сценария. Для браузерного теста нужно настроенное окружение Selenium. Эти проверки не заменяют сверку данных и ручную проверку фильтров.
 
-Now you should be able to run the tests:
-
-```sh
-$ pytest
-```
+В коммите или pull request кратко опишите, что изменилось и как вы проверили результат. Локальные базы, конфигурации, виртуальные окружения и автокопии редакторов добавлять не нужно.

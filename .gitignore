@@ -1,4 +1,12 @@
 venv/
+.venv/
 *.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 .DS_Store
 .ipynb_checkpoints/
+anaconda_projects/
+.pytest_cache/
+htmlcov/
+.coverage.*
